@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+modules/*/build
+.idea
+*.iml
+.DS_Store
+docs
+deploy
+README.md

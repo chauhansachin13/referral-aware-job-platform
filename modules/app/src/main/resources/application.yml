@@ -1,0 +1,144 @@
+# Every value here is environment-overridable. The defaults are the docker-compose topology,
+# so `docker compose up -d && ./gradlew bootRun` works with no configuration at all.
+#
+# The two secrets — referralhub.storage.encryption-key and url-signing-secret — deliberately
+# have NO default. The application refuses to start without them rather than shipping a
+# placeholder key that every deployment would share.
+
+spring:
+  application:
+    name: referralhub
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/referralhub}
+    username: ${DATABASE_USER:referralhub}
+    password: ${DATABASE_PASSWORD:referralhub}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: 5
+      connection-timeout: 5000
+      # Shorter than any managed Postgres idle timeout, so the pool never hands out a
+      # connection the server has already closed.
+      max-lifetime: 900000
+
+  flyway:
+    enabled: true
+    # Each module ships its own migrations; versions are namespaced by module
+    # (001 common, 101 ingestion, 201 dedup, 401 referral, 501 trust) so ordering is explicit.
+    locations:
+      - classpath:db/migration/common
+      - classpath:db/migration/ingestion
+      - classpath:db/migration/dedup
+      - classpath:db/migration/referral
+      - classpath:db/migration/trust
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: referralhub
+      auto-offset-reset: earliest
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: referralhub
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+referralhub:
+  outbox:
+    relay-enabled: ${OUTBOX_RELAY_ENABLED:true}
+    batch-size: 200
+    poll-interval-millis: 500
+    max-attempts: 10
+
+  ingestion:
+    crawl-enabled: ${CRAWL_ENABLED:true}
+    user-agent: ${CRAWLER_USER_AGENT:ReferralHubBot/0.1 (+https://github.com/chauhansachin13/referral-aware-job-platform)}
+    default-rate-limit:
+      permits-per-second: 2
+      capacity: 10
+    crawl:
+      min-interval: 5m
+      max-interval: 12h
+      target-postings-per-crawl: 3
+      workers: 8
+
+  dedup:
+    num-hashes: 128
+    bands: 16
+    match-threshold: 0.82
+    max-candidates: 200
+    exact-score-limit: 25
+
+  search:
+    opensearch-uri: ${OPENSEARCH_URI:http://localhost:9200}
+    index-name: ${SEARCH_INDEX:jobs_v1}
+    indexer-enabled: ${SEARCH_INDEXER_ENABLED:true}
+    candidate-depth: 200
+    freshness-half-life: 14d
+
+  trust:
+    verification-validity: 90d
+    otp-validity: 10m
+    seeker-daily-request-cap: 10
+    referrer-concurrent-capacity: 5
+    request-expiry: 7d
+
+  storage:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    region: ${AWS_REGION:us-east-1}
+    bucket: ${RESUME_BUCKET:referralhub-resumes}
+    access-key: ${MINIO_ACCESS_KEY:referralhub}
+    secret-key: ${MINIO_SECRET_KEY:referralhub-secret}
+    # No defaults. See the note at the top of this file.
+    encryption-key: ${REFERRALHUB_STORAGE_ENCRYPTIONKEY:}
+    url-signing-secret: ${REFERRALHUB_STORAGE_URLSIGNINGSECRET:}
+    download-url-ttl: 5m
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+logging:
+  level:
+    root: INFO
+    com.referralhub: ${LOG_LEVEL:INFO}

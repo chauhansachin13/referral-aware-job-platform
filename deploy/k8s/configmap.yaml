@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: referralhub-config
+  namespace: referralhub
+data:
+  # Non-secret configuration only. Anything sensitive lives in the Secret, which is why the
+  # datastore hostnames are here and the passwords are not.
+  REDIS_HOST: "redis.referralhub.svc.cluster.local"
+  REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.referralhub.svc.cluster.local:9092"
+  OPENSEARCH_URI: "http://opensearch.referralhub.svc.cluster.local:9200"
+  MINIO_ENDPOINT: "http://minio.referralhub.svc.cluster.local:9000"
+  RESUME_BUCKET: "referralhub-resumes"
+  SEARCH_INDEX: "jobs_v1"
+  LOG_LEVEL: "INFO"
+  CRAWL_ENABLED: "true"
+  SEARCH_INDEXER_ENABLED: "true"
+  OUTBOX_RELAY_ENABLED: "true"

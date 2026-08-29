@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReferralHub — Console</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfbfd; --panel: #ffffff; --border: #e3e3e8; --text: #16161a;
+    --muted: #6b6b76; --accent: #2b5fd9; --accent-soft: #eef2fd;
+    --good: #1b7f4b; --warn: #a8620a; --bad: #b3261e;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1013; --panel: #17181d; --border: #2a2c33; --text: #e8e8ec;
+      --muted: #9a9aa6; --accent: #7aa2f7; --accent-soft: #1b2337;
+      --good: #62c48c; --warn: #e0a458; --bad: #f07a72;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    border-bottom: 1px solid var(--border); background: var(--panel);
+    padding: 14px 20px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  #health { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  #health .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+                 background: var(--muted); margin-right: 6px; vertical-align: middle; }
+  #health.up .dot { background: var(--good); }
+  #health.down .dot { background: var(--bad); }
+
+  nav { display: flex; gap: 4px; padding: 10px 20px 0; border-bottom: 1px solid var(--border);
+        background: var(--panel); flex-wrap: wrap; }
+  nav button {
+    background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px;
+    color: var(--muted); font: inherit; font-size: 14px; cursor: pointer;
+  }
+  nav button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 22px 20px 60px; }
+  section[hidden] { display: none; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  input, select, textarea {
+    font: inherit; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--panel); color: var(--text); min-width: 150px;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button.go {
+    font: inherit; padding: 8px 15px; border: 1px solid var(--accent); border-radius: 7px;
+    background: var(--accent); color: #fff; cursor: pointer;
+  }
+  button.go.ghost { background: transparent; color: var(--accent); }
+  button.go:disabled { opacity: .5; cursor: default; }
+
+  .card {
+    border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+    padding: 14px 16px; margin-bottom: 10px;
+  }
+  .card h3 { margin: 0 0 3px; font-size: 15px; }
+  .meta { color: var(--muted); font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .scores { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 8px;
+            padding-top: 8px; border-top: 1px dashed var(--border); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 11px;
+          background: var(--accent-soft); color: var(--accent); font-family: var(--mono); }
+  .empty { color: var(--muted); padding: 26px; text-align: center; border: 1px dashed var(--border);
+           border-radius: 10px; }
+  .err { color: var(--bad); font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; }
+  pre { font-family: var(--mono); font-size: 12px; background: var(--panel); border: 1px solid var(--border);
+        border-radius: 8px; padding: 12px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; }
+  td.mono, .mono { font-family: var(--mono); font-size: 12px; }
+  .state { font-family: var(--mono); font-size: 11.5px; padding: 1px 7px; border-radius: 20px;
+           background: var(--accent-soft); color: var(--accent); }
+  .state.CLOSED, .state.DECLINED, .state.EXPIRED { background: transparent; color: var(--muted);
+           border: 1px solid var(--border); }
+  .state.ACCEPTED, .state.SUBMITTED { background: transparent; color: var(--good);
+           border: 1px solid var(--good); }
+  footer { color: var(--muted); font-size: 12.5px; text-align: center; padding: 0 20px 40px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ReferralHub</h1>
+  <span class="sub">operator console</span>
+  <span class="spacer"></span>
+  <span id="health"><span class="dot"></span><span id="health-text">checking…</span></span>
+</header>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="search">Search</button>
+  <button role="tab" aria-selected="false" data-tab="referrals">Referrals</button>
+  <button role="tab" aria-selected="false" data-tab="boards">Boards</button>
+  <button role="tab" aria-selected="false" data-tab="dedup">Dedup</button>
+</nav>
+
+<main>
+  <!-- ------------------------------------------------------------------ Search -->
+  <section id="tab-search">
+    <h2>Hybrid search</h2>
+    <p class="hint">
+      Runs BM25 and kNN together, fuses them by reciprocal rank, then applies an exponential
+      freshness decay. Each result shows where it placed in each retriever, so you can see which
+      leg found it.
+    </p>
+    <form class="row" id="search-form">
+      <label>Query<input id="q" value="kubernetes platform" placeholder="try: k8s"></label>
+      <label>Location<input id="loc" placeholder="Berlin"></label>
+      <label>Level
+        <select id="level">
+          <option value="">any</option>
+          <option>ENTRY</option><option>MID</option><option>SENIOR</option>
+          <option>STAFF</option><option>PRINCIPAL</option>
+        </select>
+      </label>
+      <label>Remote
+        <select id="remote"><option value="">any</option><option value="true">yes</option>
+          <option value="false">no</option></select>
+      </label>
+      <label>Size<input id="size" type="number" value="20" min="1" max="100"></label>
+      <button class="go" type="submit">Search</button>
+    </form>
+    <div id="search-status" class="hint"></div>
+    <div id="search-results"></div>
+    <div class="row"><button class="go ghost" id="more" hidden>Load more</button></div>
+  </section>
+
+  <!-- --------------------------------------------------------------- Referrals -->
+  <section id="tab-referrals" hidden>
+    <h2>Referral lifecycle</h2>
+    <p class="hint">
+      REQUESTED → ACCEPTED → SUBMITTED → CLOSED, with DECLINED and EXPIRED exits. Illegal moves
+      are rejected by the domain layer, not by this page. Every action sends an
+      <code>Idempotency-Key</code>, so pressing a button twice is a no-op.
+    </p>
+    <div class="row">
+      <label>Seeker id<input id="seeker-id" class="mono" placeholder="uuid" size="36"></label>
+      <button class="go ghost" id="load-referrals">Load requests</button>
+      <button class="go ghost" id="make-user">Create a test user</button>
+    </div>
+    <div id="referral-status" class="hint"></div>
+    <div id="referral-list"></div>
+  </section>
+
+  <!-- ------------------------------------------------------------------ Boards -->
+  <section id="tab-boards" hidden>
+    <h2>Ingestion</h2>
+    <p class="hint">
+      Only public ATS board APIs: Greenhouse, Lever and Ashby. Registering a board queues it for
+      an immediate crawl; the adaptive scheduler takes over from there.
+    </p>
+    <form class="row" id="board-form">
+      <label>Company<input id="b-name" value="Stripe"></label>
+      <label>Slug<input id="b-slug" value="stripe"></label>
+      <label>Source
+        <select id="b-source"><option>greenhouse</option><option>lever</option><option>ashby</option></select>
+      </label>
+      <label>Board token<input id="b-token" value="stripe"></label>
+      <label>Email domain<input id="b-domain" value="stripe.com"></label>
+      <button class="go" type="submit">Register</button>
+    </form>
+    <div id="board-status" class="hint"></div>
+    <div id="board-list"></div>
+  </section>
+
+  <!-- ------------------------------------------------------------------- Dedup -->
+  <section id="tab-dedup" hidden>
+    <h2>LSH banding</h2>
+    <p class="hint">
+      The retrieval curve for the configured banding. Two postings become candidates when they
+      agree on every row of at least one band; this is the probability of that happening at a
+      given true Jaccard similarity.
+    </p>
+    <div id="banding"></div>
+  </section>
+</main>
+
+<footer>
+  <a href="/docs">OpenAPI / Swagger UI</a> ·
+  <a href="/actuator/health">health</a> ·
+  <a href="/actuator/prometheus">metrics</a>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // A fresh key per user action. Retrying a click must not create a second request.
+  const idem = () => (crypto.randomUUID ? crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2));
+
+  async function api(path, options = {}) {
+    const response = await fetch(path, {
+      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      ...options,
+    });
+    const text = await response.text();
+    let body = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (!response.ok) {
+      const message = body && body.message ? body.message : (text || response.statusText);
+      throw new Error(`${response.status} — ${message}`);
+    }
+    return body;
+  }
+
+  const show = (el, message, isError) => {
+    el.innerHTML = message ? `<span class="${isError ? "err" : ""}">${esc(message)}</span>` : "";
+  };
+
+  // ---------------------------------------------------------------------- tabs
+  document.querySelectorAll("nav button").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll("nav button").forEach((b) =>
+        b.setAttribute("aria-selected", String(b === button)));
+      document.querySelectorAll("main section").forEach((s) =>
+        s.hidden = s.id !== "tab-" + button.dataset.tab);
+      if (button.dataset.tab === "boards") loadBoards();
+      if (button.dataset.tab === "dedup") loadBanding();
+    });
+  });
+
+  // -------------------------------------------------------------------- health
+  async function pollHealth() {
+    const badge = $("health"), text = $("health-text");
+    try {
+      const health = await api("/actuator/health");
+      badge.className = health.status === "UP" ? "up" : "down";
+      text.textContent = "api " + health.status.toLowerCase();
+    } catch {
+      badge.className = "down";
+      text.textContent = "api unreachable";
+    }
+  }
+  pollHealth();
+  setInterval(pollHealth, 15000);
+
+  // -------------------------------------------------------------------- search
+  let nextCursor = null;
+
+  function searchParams(cursor) {
+    const params = new URLSearchParams();
+    if ($("q").value.trim()) params.set("q", $("q").value.trim());
+    if ($("loc").value.trim()) params.set("location", $("loc").value.trim());
+    if ($("level").value) params.set("level", $("level").value);
+    if ($("remote").value) params.set("remote", $("remote").value);
+    params.set("size", $("size").value || "20");
+    if (cursor) params.set("cursor", cursor);
+    return params;
+  }
+
+  function renderHit(hit) {
+    const legs = [];
+    if (hit.lexicalRank != null) legs.push(`BM25 #${hit.lexicalRank}`);
+    if (hit.vectorRank != null) legs.push(`kNN #${hit.vectorRank}`);
+    const posted = hit.postedAt ? new Date(hit.postedAt).toLocaleDateString() : "date unknown";
+    return `<article class="card">
+      <h3>${esc(hit.title)}</h3>
+      <div class="meta">
+        <span>${esc(hit.companyName)}</span>
+        <span>${esc(hit.location) || "location unstated"}</span>
+        ${hit.remote ? '<span class="pill">remote</span>' : ""}
+        ${hit.level && hit.level !== "UNSPECIFIED" ? `<span class="pill">${esc(hit.level)}</span>` : ""}
+        <span>${posted}</span>
+        ${hit.sourceCount > 1 ? `<span class="pill">${hit.sourceCount} sources</span>` : ""}
+      </div>
+      <div class="scores">
+        score ${hit.score.toFixed(5)}
+        = fused ${hit.fusedScore.toFixed(5)}
+        × freshness ${hit.freshnessMultiplier.toFixed(3)}
+        ${legs.length ? " · found by " + legs.join(" + ") : ""}
+        · <span title="canonical job id">${esc(hit.canonicalJobId)}</span>
+      </div>
+    </article>`;
+  }
+
+  async function runSearch(append) {
+    const status = $("search-status"), results = $("search-results");
+    show(status, "searching…");
+    try {
+      const page = await api("/api/v1/search?" + searchParams(append ? nextCursor : null));
+      nextCursor = page.nextCursor;
+      $("more").hidden = !nextCursor;
+      const html = page.hits.map(renderHit).join("");
+      if (append) results.insertAdjacentHTML("beforeend", html);
+      else results.innerHTML = html || `<div class="empty">No matches. If the crawler has not
+        run yet, register a board on the Boards tab first.</div>`;
+      show(status, `${page.totalCandidates} candidates after fusion · ${page.tookMillis} ms`);
+    } catch (e) {
+      show(status, e.message, true);
+      if (!append) results.innerHTML = "";
+    }
+  }
+
+  $("search-form").addEventListener("submit", (e) => { e.preventDefault(); runSearch(false); });
+  $("more").addEventListener("click", () => runSearch(true));
+
+  // ----------------------------------------------------------------- referrals
+  function renderReferral(request) {
+    const actions = {
+      REQUESTED: [["accept", "Accept"], ["decline", "Decline"]],
+      ACCEPTED: [["submit", "Mark submitted"], ["close", "Close"]],
+      SUBMITTED: [["close", "Close"]],
+    }[request.state] || [];
+
+    return `<article class="card" data-id="${esc(request.id)}">
+      <h3>Referral <span class="mono">${esc(request.id.slice(0, 8))}</span>
+        <span class="state ${esc(request.state)}">${esc(request.state)}</span></h3>
+      <div class="meta">
+        <span class="mono">job ${esc(request.canonicalJobId.slice(0, 8))}</span>
+        <span>expires ${new Date(request.expiresAt).toLocaleString()}</span>
+        ${request.resumeAttached ? '<span class="pill">resume attached</span>' : ""}
+      </div>
+      ${request.message ? `<p class="meta">${esc(request.message)}</p>` : ""}
+      <div class="row" style="margin:10px 0 0">
+        ${actions.map(([op, label]) =>
+          `<button class="go ghost" data-op="${op}">${label}</button>`).join("")}
+        <button class="go ghost" data-op="audit">Audit trail</button>
+      </div>
+      <div class="audit"></div>
+    </article>`;
+  }
+
+  async function loadReferrals() {
+    const status = $("referral-status"), list = $("referral-list");
+    const seeker = $("seeker-id").value.trim();
+    if (!seeker) return show(status, "Enter a seeker id, or create a test user.", true);
+    show(status, "loading…");
+    try {
+      const requests = await api(`/api/v1/referrals/seekers/${encodeURIComponent(seeker)}`);
+      list.innerHTML = requests.map(renderReferral).join("")
+        || `<div class="empty">This seeker has no referral requests yet.</div>`;
+      show(status, `${requests.length} request(s)`);
+    } catch (e) {
+      show(status, e.message, true);
+      list.innerHTML = "";
+    }
+  }
+
+  $("load-referrals").addEventListener("click", loadReferrals);
+
+  $("make-user").addEventListener("click", async () => {
+    const status = $("referral-status");
+    try {
+      const user = await api("/api/v1/trust/users", {
+        method: "POST",
+        body: JSON.stringify({
+          displayName: "Console user",
+          email: `console-${Date.now()}@example.com`,
+        }),
+      });
+      $("seeker-id").value = user.id;
+      show(status, "Created user " + user.id);
+    } catch (e) { show(status, e.message, true); }
+  });
+
+  $("referral-list").addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-op]");
+    if (!button) return;
+    const card = button.closest("[data-id]");
+    const id = card.dataset.id;
+    const op = button.dataset.op;
+    const status = $("referral-status");
+
+    try {
+      if (op === "audit") {
+        const trail = await api(`/api/v1/referrals/${id}/audit`);
+        card.querySelector(".audit").innerHTML = `<pre>${esc(
+          trail.map((t) => `${t.occurredAt}  ${t.fromState || "—"} → ${t.toState}` +
+            `  by ${t.actorType}${t.reason ? "  (" + t.reason + ")" : ""}`).join("\n")
+        )}</pre>`;
+        return;
+      }
+      const actorId = prompt(`Acting user id for "${op}"`, $("seeker-id").value.trim());
+      if (!actorId) return;
+      await api(`/api/v1/referrals/${id}/${op}`, {
+        method: "POST",
+        headers: { "Idempotency-Key": idem() },
+        body: JSON.stringify({ actorId, reason: null }),
+      });
+      show(status, `${op} applied`);
+      loadReferrals();
+    } catch (e) { show(status, e.message, true); }
+  });
+
+  // -------------------------------------------------------------------- boards
+  async function loadBoards() {
+    const list = $("board-list");
+    try {
+      const [boards, queue] = await Promise.all([
+        api("/api/v1/ingestion/boards"),
+        api("/api/v1/ingestion/queue"),
+      ]);
+      if (!boards.length) {
+        list.innerHTML = `<div class="empty">No boards registered yet.</div>`;
+        return;
+      }
+      list.innerHTML = `<p class="hint">${queue.scheduledBoards} board(s) in the crawl queue.</p>
+        <table><thead><tr>
+          <th>Company</th><th>Source</th><th>Token</th><th>Interval</th>
+          <th>Last crawled</th><th>Unchanged</th><th>Posts/day</th>
+        </tr></thead><tbody>` +
+        boards.map((b) => `<tr>
+          <td>${esc(b.companyName)}</td>
+          <td class="mono">${esc(b.source)}</td>
+          <td class="mono">${esc(b.boardToken)}</td>
+          <td class="mono">${Math.round(b.crawlIntervalSeconds / 60)} min</td>
+          <td>${b.lastCrawledAt ? new Date(b.lastCrawledAt).toLocaleString() : "never"}</td>
+          <td class="mono">${b.consecutiveUnchanged}</td>
+          <td class="mono">${b.observedPostingsPerDay.toFixed(2)}</td>
+        </tr>`).join("") + "</tbody></table>";
+    } catch (e) {
+      list.innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    }
+  }
+
+  $("board-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("board-status");
+    show(status, "registering…");
+    try {
+      const board = await api("/api/v1/ingestion/boards", {
+        method: "POST",
+        body: JSON.stringify({
+          companyName: $("b-name").value.trim(),
+          companySlug: $("b-slug").value.trim(),
+          source: $("b-source").value,
+          boardToken: $("b-token").value.trim(),
+          emailDomain: $("b-domain").value.trim() || null,
+        }),
+      });
+      show(status, `Registered and queued: ${board.id}`);
+      loadBoards();
+    } catch (e) { show(status, e.message, true); }
+  });
+
+  // --------------------------------------------------------------------- dedup
+  async function loadBanding() {
+    const target = $("banding");
+    try {
+      const b = await api("/api/v1/dedup/banding");
+      const width = 520, height = 170, pad = 34;
+      const points = b.retrievalCurve.map((p) => {
+        const x = pad + (p.jaccard - 0.5) / 0.45 * (width - pad * 2);
+        const y = height - pad - p.retrievalProbability * (height - pad * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+
+      target.innerHTML = `
+        <p class="hint">${b.bands} bands × ${b.rowsPerBand} rows ·
+          50% crossover at Jaccard ${b.similarityThreshold.toFixed(3)}</p>
+        <svg viewBox="0 0 ${width} ${height}" width="100%" style="max-width:${width}px"
+             role="img" aria-label="LSH retrieval probability curve">
+          <line x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}"
+                stroke="var(--border)"/>
+          <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${height - pad}" stroke="var(--border)"/>
+          <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <text x="${pad}" y="${height - 12}" font-size="10" fill="var(--muted)">J=0.50</text>
+          <text x="${width - pad - 28}" y="${height - 12}" font-size="10" fill="var(--muted)">0.95</text>
+          <text x="6" y="${pad + 4}" font-size="10" fill="var(--muted)">1.0</text>
+          <text x="6" y="${height - pad}" font-size="10" fill="var(--muted)">0.0</text>
+        </svg>
+        <table><thead><tr><th>true Jaccard</th><th>P(becomes a candidate)</th></tr></thead><tbody>` +
+        b.retrievalCurve.map((p) => `<tr><td class="mono">${p.jaccard.toFixed(2)}</td>
+          <td class="mono">${(p.retrievalProbability * 100).toFixed(1)}%</td></tr>`).join("") +
+        `</tbody></table>`;
+    } catch (e) {
+      target.innerHTML = `<span class="err">${esc(e.message)}</span>`;
+    }
+  }
+
+  runSearch(false);
+})();
+</script>
+</body>
+</html>
