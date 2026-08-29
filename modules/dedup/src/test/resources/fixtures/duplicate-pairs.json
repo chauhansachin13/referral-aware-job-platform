@@ -1,0 +1,434 @@
+[
+  {
+    "label": "duplicate",
+    "reason": "same req on Greenhouse and Lever, title punctuation differs",
+    "left": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Sr. Software Engineer - Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "numeric ladder vs roman numeral for the same level",
+    "left": {
+      "company": "acme",
+      "title": "SDE-2, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Software Engineer II, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "member of technical staff is the same rung as software engineer",
+    "left": {
+      "company": "acme",
+      "title": "Member of Technical Staff, Payments",
+      "location": "New York, NY",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Software Engineer II, Payments",
+      "location": "New York, NY",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "repost with the description lightly reworded",
+    "left": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "In this role you own correctness for the double entry ledger settling every transaction. That means designing idempotent money movement APIs, reconciling against bank files, and building tooling so support can answer where is my money in seconds. Our stack is Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "location written at two levels of precision",
+    "left": {
+      "company": "acme",
+      "title": "Staff Engineer, Infrastructure",
+      "location": "San Francisco",
+      "remote": false,
+      "description": "You will own the Kubernetes platform every product team deploys onto, including the build system, the service mesh and the paved road for new services. Expect deep work on reliability, cost and developer experience. We run Terraform, Kubernetes and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Staff Engineer, Infrastructure",
+      "location": "San Francisco, CA, United States",
+      "remote": false,
+      "description": "You will own the Kubernetes platform every product team deploys onto, including the build system, the service mesh and the paved road for new services. Expect deep work on reliability, cost and developer experience. We run Terraform, Kubernetes and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "same remote role on two boards with different remote wording",
+    "left": {
+      "company": "acme",
+      "title": "Site Reliability Engineer, Payments",
+      "location": "Remote - United States",
+      "remote": true,
+      "description": "You will own the reliability of the payments tier, including the on call rotation, the error budget policy and the load testing harness. Expect deep work on capacity planning and on removing the toil that wakes people up. We run Kubernetes, Prometheus and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Site Reliability Engineer, Payments",
+      "location": "Anywhere",
+      "remote": true,
+      "description": "You will own the reliability of the payments tier, including the on call rotation, the error budget policy and the load testing harness. Expect deep work on capacity planning and on removing the toil that wakes people up. We run Kubernetes, Prometheus and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "requisition number appended to one title",
+    "left": {
+      "company": "acme",
+      "title": "Machine Learning Engineer, Ranking",
+      "location": "London, UK",
+      "remote": false,
+      "description": "You will own the ranking models end to end, from feature pipelines through training to the online serving path and its latency budget. Expect to work on offline to online correlation and on the evaluation harness. We run PyTorch and a Java serving stack. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Machine Learning Engineer, Ranking (Req #40122)",
+      "location": "London, UK",
+      "remote": false,
+      "description": "You will own the ranking models end to end, from feature pipelines through training to the online serving path and its latency budget. Expect to work on offline to online correlation and on the evaluation harness. We run PyTorch and a Java serving stack. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "department prefix on one board only",
+    "left": {
+      "company": "acme",
+      "title": "Engineering | Backend Engineer, Search",
+      "location": "Bengaluru, India",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Backend Engineer, Search",
+      "location": "Bengaluru, India",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "abbreviation vs expansion of the same role",
+    "left": {
+      "company": "acme",
+      "title": "SRE, Payments",
+      "location": "Dublin, Ireland",
+      "remote": false,
+      "description": "You will own the reliability of the payments tier, including the on call rotation, the error budget policy and the load testing harness. Expect deep work on capacity planning and on removing the toil that wakes people up. We run Kubernetes, Prometheus and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Site Reliability Engineer, Payments",
+      "location": "Dublin, Ireland",
+      "remote": false,
+      "description": "You will own the reliability of the payments tier, including the on call rotation, the error budget policy and the load testing harness. Expect deep work on capacity planning and on removing the toil that wakes people up. We run Kubernetes, Prometheus and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "one board adds a single closing sentence",
+    "left": {
+      "company": "acme",
+      "title": "Data Engineer, Warehouse",
+      "location": "Toronto, Canada",
+      "remote": false,
+      "description": "You will own the batch and streaming pipelines that land every event into the warehouse, including schema evolution, backfills and data quality checks. We run Spark, Kafka and dbt on top of a columnar warehouse. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Data Engineer, Warehouse",
+      "location": "Toronto, Canada",
+      "remote": false,
+      "description": "You will own the batch and streaming pipelines that land every event into the warehouse, including schema evolution, backfills and data quality checks. We run Spark, Kafka and dbt on top of a columnar warehouse. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background. Applications are reviewed on a rolling basis."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "senior abbreviated differently and comma dropped",
+    "left": {
+      "company": "acme",
+      "title": "Senior Data Scientist, Marketplace",
+      "location": "Berlin, Germany",
+      "remote": false,
+      "description": "You will own experimentation and causal measurement for the marketplace, from designing switchback tests to explaining to leadership why a launch did or did not move the metric. We run Python, dbt and an internal experimentation platform. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Snr Data Scientist Marketplace",
+      "location": "Berlin, Germany",
+      "remote": false,
+      "description": "You will own experimentation and causal measurement for the marketplace, from designing switchback tests to explaining to leadership why a launch did or did not move the metric. We run Python, dbt and an internal experimentation platform. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "duplicate",
+    "reason": "staff vs tech lead used for the same rung",
+    "left": {
+      "company": "acme",
+      "title": "Staff Engineer, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Tech Lead, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "same level and family, different specialization sharing boilerplate",
+    "left": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Search",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "same role and team, two rungs apart on the ladder",
+    "left": {
+      "company": "acme",
+      "title": "SDE-1, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "SDE-3, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "identical posting at a different company is a different job",
+    "left": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "globex",
+      "title": "Senior Software Engineer, Payments",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "backend and frontend at the same level",
+    "left": {
+      "company": "acme",
+      "title": "Senior Backend Engineer, Search",
+      "location": "Bengaluru, India",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Frontend Engineer, Dashboard",
+      "location": "Bengaluru, India",
+      "remote": false,
+      "description": "You will own the merchant dashboard that sellers use every day, from the component library to the performance budget. Expect deep work on accessibility, bundle size and rendering performance. We run TypeScript and React. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "data engineer and data scientist are adjacent but distinct families",
+    "left": {
+      "company": "acme",
+      "title": "Data Engineer, Warehouse",
+      "location": "Toronto, Canada",
+      "remote": false,
+      "description": "You will own the batch and streaming pipelines that land every event into the warehouse, including schema evolution, backfills and data quality checks. We run Spark, Kafka and dbt on top of a columnar warehouse. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Data Scientist, Marketplace",
+      "location": "Toronto, Canada",
+      "remote": false,
+      "description": "You will own experimentation and causal measurement for the marketplace, from designing switchback tests to explaining to leadership why a launch did or did not move the metric. We run Python, dbt and an internal experimentation platform. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "same role in two cities is normally two requisitions",
+    "left": {
+      "company": "acme",
+      "title": "Staff Engineer, Infrastructure",
+      "location": "San Francisco, CA",
+      "remote": false,
+      "description": "You will own the Kubernetes platform every product team deploys onto, including the build system, the service mesh and the paved road for new services. Expect deep work on reliability, cost and developer experience. We run Terraform, Kubernetes and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Staff Engineer, Infrastructure",
+      "location": "Tokyo, Japan",
+      "remote": false,
+      "description": "You will own the Kubernetes platform every product team deploys onto, including the build system, the service mesh and the paved road for new services. Expect deep work on reliability, cost and developer experience. We run Terraform, Kubernetes and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "manager and individual contributor on the same team",
+    "left": {
+      "company": "acme",
+      "title": "Engineering Manager, Payments",
+      "location": "New York, NY",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "New York, NY",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "intern and full time role on the same team",
+    "left": {
+      "company": "acme",
+      "title": "Software Engineer Intern, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Software Engineer II, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "ML engineer and SRE share only company boilerplate",
+    "left": {
+      "company": "acme",
+      "title": "Machine Learning Engineer, Ranking",
+      "location": "London, UK",
+      "remote": false,
+      "description": "You will own the ranking models end to end, from feature pipelines through training to the online serving path and its latency budget. Expect to work on offline to online correlation and on the evaluation harness. We run PyTorch and a Java serving stack. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Site Reliability Engineer, Payments",
+      "location": "London, UK",
+      "remote": false,
+      "description": "You will own the reliability of the payments tier, including the on call rotation, the error budget policy and the load testing harness. Expect deep work on capacity planning and on removing the toil that wakes people up. We run Kubernetes, Prometheus and Go. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "remote and on-site versions of the same title are separate reqs",
+    "left": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "Remote - United States",
+      "remote": true,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Payments",
+      "location": "New York, NY",
+      "remote": false,
+      "description": "You will own correctness of the double entry ledger that settles every transaction. This means designing idempotent money movement APIs, reconciling against bank files and building the tooling that lets support answer where is my money in seconds. We run Java and Postgres with Kafka between services. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "two postings that are nothing but the same boilerplate",
+    "left": {
+      "company": "acme",
+      "title": "Recruiting Coordinator",
+      "location": "Austin, TX",
+      "remote": false,
+      "description": "You will own interview scheduling and candidate experience across the engineering funnel. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Office Manager",
+      "location": "Austin, TX",
+      "remote": false,
+      "description": "You will own the day to day running of the Austin office including vendors and events. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  },
+  {
+    "label": "distinct",
+    "reason": "principal and senior on the same team",
+    "left": {
+      "company": "acme",
+      "title": "Principal Engineer, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    },
+    "right": {
+      "company": "acme",
+      "title": "Senior Software Engineer, Search",
+      "location": "Seattle, WA",
+      "remote": false,
+      "description": "You will own relevance for job search across two hundred million postings. Expect to work on query understanding, learning to rank, and the online evaluation harness that tells us whether a ranking change helped. We run OpenSearch with a Java service layer. Acme is building the infrastructure that powers modern commerce. We are a distributed team that values ownership, written communication and shipping. We offer competitive compensation, equity and comprehensive health coverage. Acme is an equal opportunity employer and welcomes applicants from every background."
+    }
+  }
+]

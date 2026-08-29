@@ -141,6 +141,40 @@ public class RawPostingStore {
                 error == null ? null : error.substring(0, Math.min(error.length(), 1000)));
     }
 
+    private static final org.springframework.jdbc.core.RowMapper<RawPostingRecord> RECORD_MAPPER =
+            (rs, rowNum) -> new RawPostingRecord(
+                    rs.getObject("id", UUID.class),
+                    rs.getObject("board_id", UUID.class),
+                    rs.getObject("company_id", UUID.class),
+                    rs.getString("source"),
+                    rs.getString("external_id"),
+                    rs.getString("title"),
+                    rs.getString("description_html"),
+                    rs.getString("location"),
+                    rs.getBoolean("remote"),
+                    rs.getString("department"),
+                    rs.getString("apply_url"),
+                    rs.getTimestamp("posted_at") == null ? null : rs.getTimestamp("posted_at").toInstant(),
+                    rs.getString("content_hash"),
+                    rs.getTimestamp("first_seen_at").toInstant(),
+                    rs.getTimestamp("last_seen_at").toInstant(),
+                    rs.getTimestamp("closed_at") == null ? null : rs.getTimestamp("closed_at").toInstant());
+
+    /** Read access for downstream modules; they never touch the table directly. */
+    public java.util.Optional<RawPostingRecord> findById(UUID id) {
+        return jdbc.query("SELECT * FROM raw_posting WHERE id = ?", RECORD_MAPPER, id)
+                .stream().findFirst();
+    }
+
+    public List<RawPostingRecord> findOpenByCompany(UUID companyId, int limit) {
+        return jdbc.query("""
+                SELECT * FROM raw_posting
+                WHERE company_id = ? AND closed_at IS NULL
+                ORDER BY last_seen_at DESC
+                LIMIT ?
+                """, RECORD_MAPPER, companyId, limit);
+    }
+
     /** Whether this exact body has already been stored for this board. */
     public boolean hasPayloadWithHash(UUID boardId, String rawHash) {
         Integer n = jdbc.queryForObject(
