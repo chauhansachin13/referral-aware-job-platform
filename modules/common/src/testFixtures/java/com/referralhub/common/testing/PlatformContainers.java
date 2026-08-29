@@ -1,5 +1,6 @@
 package com.referralhub.common.testing;
 
+import java.time.Duration;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -74,10 +75,18 @@ public final class PlatformContainers {
                     .withEnv("discovery.type", "single-node")
                     .withEnv("DISABLE_SECURITY_PLUGIN", "true")
                     .withEnv("DISABLE_INSTALL_DEMO_CONFIG", "true")
-                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms512m -Xmx512m")
+                    // Belt and braces: 2.12+ refuses to start without an admin password unless
+                    // security is off, and the two switches are honoured by different versions.
+                    .withEnv("plugins.security.disabled", "true")
+                    // 512m is enough on a developer machine and not enough on a shared CI runner,
+                    // where the JVM starts slowly and the cluster never reaches green in time.
+                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1g -Xmx1g")
+                    .withEnv("bootstrap.memory_lock", "false")
                     .waitingFor(Wait.forHttp("/_cluster/health")
                             .forPort(9200)
-                            .forStatusCodeMatching(code -> code == 200 || code == 401))
+                            .forStatusCodeMatching(code -> code == 200 || code == 401)
+                            .withStartupTimeout(Duration.ofMinutes(4)))
+                    .withStartupTimeout(Duration.ofMinutes(4))
                     .withReuse(true);
             container.start();
             return container;

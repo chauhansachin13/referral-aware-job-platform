@@ -175,12 +175,28 @@ public class RawPostingStore {
                 """, RECORD_MAPPER, companyId, limit);
     }
 
-    /** Whether this exact body has already been stored for this board. */
-    public boolean hasPayloadWithHash(UUID boardId, String rawHash) {
-        Integer n = jdbc.queryForObject(
-                "SELECT count(*) FROM raw_payload WHERE board_id = ? AND raw_hash = ?",
-                Integer.class, boardId, rawHash);
-        return n != null && n > 0;
+    /**
+     * Whether the board's <em>most recent</em> payload had this exact hash.
+     *
+     * <p>Deliberately the latest payload and not any historical one. Matching against history
+     * looks equivalent and is not: a board that publishes A, then B, then reverts to A would
+     * match the stored A, skip the parse, and leave the database describing B — with a posting
+     * that has since been withdrawn still marked open. Reverts are common (a role is pulled and
+     * reinstated, a CMS rolls back a bad deploy), so this is a real sequence, not a contrived one.
+     *
+     * <p>The short circuit is still worth having: the overwhelmingly common case is a board that
+     * has not changed since the last crawl, which is exactly what this now tests.
+     */
+    public boolean lastPayloadHasHash(UUID boardId, String rawHash) {
+        return jdbc.queryForList("""
+                SELECT raw_hash FROM raw_payload
+                WHERE board_id = ?
+                ORDER BY fetched_at DESC, id DESC
+                LIMIT 1
+                """, String.class, boardId)
+                .stream().findFirst()
+                .map(rawHash::equals)
+                .orElse(false);
     }
 
     public int countOpen(UUID boardId) {

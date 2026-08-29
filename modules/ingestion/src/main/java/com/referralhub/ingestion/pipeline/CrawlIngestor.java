@@ -54,9 +54,10 @@ public class CrawlIngestor {
                                Duration elapsed) {
         String rawHash = ContentHasher.raw(body);
 
-        // Cheapest path after a 304: the board does not send validators, but the bytes are
-        // identical to something we already stored. Skip the parse entirely.
-        if (postings.hasPayloadWithHash(board.id(), rawHash)) {
+        // Cheapest path after a 304: the board sends no validators, but the bytes are identical
+        // to the last ones we stored. Compared against the latest payload only — see
+        // RawPostingStore.lastPayloadHasHash for why history is the wrong thing to match.
+        if (postings.lastPayloadHasHash(board.id(), rawHash)) {
             Duration next = nextInterval(board, false);
             boards.recordNotModified(board.id(), next);
             postings.logCrawl(board.id(), "UNCHANGED_RAW", 200, elapsed.toMillis(), 0, 0, null);

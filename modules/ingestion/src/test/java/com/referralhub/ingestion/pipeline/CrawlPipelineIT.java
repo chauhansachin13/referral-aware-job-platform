@@ -271,11 +271,19 @@ class CrawlPipelineIT {
 
     @Test
     @Order(6)
-    @DisplayName("a posting that disappears from the board is closed, not deleted")
-    void vanishedPostingsAreClosed() {
+    @DisplayName("a board that reverts to an earlier body is re-parsed, and the lost posting closed")
+    void revertingToAnEarlierBodyIsStillProcessed() {
         MODE.set(Mode.NORMAL);
-        // The board goes back to two postings; the third must be closed rather than dropped,
-        // because a referral request may still point at it.
+        // The board returns to the exact two-posting body it served in step 1, after having
+        // served a three-posting body in step 5.
+        //
+        // This is the case that caught a real bug: the raw-hash short circuit originally asked
+        // "have we ever stored these bytes?", which is true here, so the crawl was skipped and
+        // the withdrawn third posting stayed open forever. The question has to be "were these
+        // the *last* bytes we stored?" — see RawPostingStore.lastPayloadHasHash.
+        //
+        // The validators are cleared so the stub serves a body rather than a 304; the point of
+        // the test is what happens once the bytes arrive.
         jdbc.update("UPDATE company_board SET etag = NULL, last_content_hash = NULL WHERE id = ?", boardId);
 
         CrawlOutcome outcome = pipeline.crawl(boardId);

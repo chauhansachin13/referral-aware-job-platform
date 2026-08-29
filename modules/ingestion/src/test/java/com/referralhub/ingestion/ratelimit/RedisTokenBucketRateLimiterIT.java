@@ -128,19 +128,29 @@ class RedisTokenBucketRateLimiterIT {
     }
 
     @Test
-    @DisplayName("a single caller drains exactly the burst capacity and is then refused")
+    @DisplayName("a single caller gets the burst plus whatever refilled while it drained")
     void burstIsBoundedByCapacity() {
         String host = "api.lever.co";
 
+        long startedAt = System.nanoTime();
         int granted = 0;
         for (int i = 0; i < 50; i++) {
             if (limiter.tryAcquire(host).allowed()) {
                 granted++;
             }
         }
+        double elapsedSeconds = (System.nanoTime() - startedAt) / 1_000_000_000.0;
 
-        assertThat(granted).isEqualTo((int) CAPACITY);
-        assertThat(limiter.tryAcquire(host).allowed()).isFalse();
+        // Not exactly CAPACITY: the bucket refills while the loop runs, and 50 round trips to
+        // Redis take long enough on a loaded CI runner for a token or two to come back. An
+        // assertion of exact equality here passes on a fast laptop and fails in CI, which is a
+        // property of the test rather than of the limiter.
+        int ceiling = (int) Math.ceil(CAPACITY + PERMITS_PER_SECOND * elapsedSeconds) + 1;
+
+        assertThat(granted)
+                .as("50 attempts in %.3fs may yield between %d and %d permits",
+                        elapsedSeconds, (int) CAPACITY, ceiling)
+                .isBetween((int) CAPACITY, ceiling);
     }
 
     @Test
