@@ -77,24 +77,50 @@ public final class PlatformContainers {
                     .withEnv("discovery.type", "single-node")
                     .withEnv("DISABLE_SECURITY_PLUGIN", "true")
                     .withEnv("DISABLE_INSTALL_DEMO_CONFIG", "true")
-                    // Do NOT also pass plugins.security.disabled here. DISABLE_SECURITY_PLUGIN
-                    // makes the entrypoint remove the plugin outright, after which that setting
-                    // is unknown and OpenSearch exits with code 64 before it ever binds a port.
-                    // Adding it as "belt and braces" turned a slow start into an instant failure.
-                    //
-                    // 512m is enough on a developer machine and not enough on a shared CI runner,
-                    // where the JVM starts slowly and the cluster never reaches green in time.
+                    // Do NOT also pass plugins.security.disabled. DISABLE_SECURITY_PLUGIN makes
+                    // the entrypoint remove the plugin outright, after which that setting is
+                    // unknown and OpenSearch exits with code 64 before it binds a port. Adding it
+                    // as "belt and braces" turned a slow start into an instant failure.
                     .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1g -Xmx1g")
                     .withEnv("bootstrap.memory_lock", "false")
-                    .waitingFor(Wait.forHttp("/_cluster/health")
-                            .forPort(9200)
-                            .forStatusCodeMatching(code -> code == 200 || code == 401)
+                    // Two stages rather than one. A single HTTP wait cannot distinguish "the
+                    // process died" from "the cluster is still forming", and reports both as a
+                    // timeout — which is what sent the last diagnosis down the wrong path.
+                    .waitingFor(new org.testcontainers.containers.wait.strategy.WaitAllStrategy()
+                            .withStrategy(Wait.forListeningPort())
+                            .withStrategy(Wait.forHttp("/_cluster/health")
+                                    .forPort(9200)
+                                    .forStatusCodeMatching(code -> code == 200 || code == 401))
                             .withStartupTimeout(Duration.ofMinutes(4)))
                     .withStartupTimeout(Duration.ofMinutes(4))
                     .withReuse(true);
-            container.start();
+            try {
+                container.start();
+            } catch (RuntimeException e) {
+                // Container logs go to stdout, which the Gradle test task does not echo. An
+                // exception message always survives, so the diagnosis travels with the failure
+                // instead of requiring another CI round trip to obtain.
+                throw new IllegalStateException(
+                        "OpenSearch container failed to start.\n--- container log ---\n"
+                                + tailOf(safeLogs(container)) + "\n--- end container log ---", e);
+            }
             return container;
         }
+    }
+
+    private static String safeLogs(GenericContainer<?> container) {
+        try {
+            return container.getLogs();
+        } catch (RuntimeException e) {
+            return "(container logs unavailable: " + e + ")";
+        }
+    }
+
+    /** Last 80 lines; the startup banner is long and the failure is always at the end. */
+    private static String tailOf(String logs) {
+        String[] lines = logs.split("\n");
+        int from = Math.max(0, lines.length - 80);
+        return String.join("\n", java.util.Arrays.copyOfRange(lines, from, lines.length));
     }
 
     private static final class RedisHolder {
