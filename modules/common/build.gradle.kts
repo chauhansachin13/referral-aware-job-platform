@@ -5,11 +5,13 @@ plugins {
 
 dependencies {
     api(libs.spring.boot.starter)
+    api(libs.spring.boot.starter.web)
     api(libs.spring.boot.starter.jdbc)
     api(libs.spring.boot.starter.validation)
     api(libs.jackson.databind)
     api(libs.jackson.jsr310)
     api(libs.spring.kafka)
+    api("io.micrometer:micrometer-core")
     implementation(libs.caffeine)
 
     testFixturesApi(platform(libs.spring.boot.bom))
