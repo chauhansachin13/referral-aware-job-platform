@@ -1,0 +1,26 @@
+plugins {
+    `java-library`
+    `java-test-fixtures`
+}
+
+dependencies {
+    api(libs.spring.boot.starter)
+    api(libs.spring.boot.starter.jdbc)
+    api(libs.spring.boot.starter.validation)
+    api(libs.jackson.databind)
+    api(libs.jackson.jsr310)
+    api(libs.spring.kafka)
+    implementation(libs.caffeine)
+
+    testFixturesApi(platform(libs.spring.boot.bom))
+    testFixturesApi(libs.testcontainers.core)
+    testFixturesApi(libs.testcontainers.junit)
+    testFixturesApi(libs.testcontainers.postgres)
+    testFixturesApi(libs.testcontainers.kafka)
+    testFixturesApi(libs.testcontainers.minio)
+    testFixturesApi(libs.junit.jupiter)
+    testFixturesApi(libs.spring.boot.starter.test)
+    testFixturesApi(libs.flyway.core)
+    testFixturesApi(libs.flyway.postgresql)
+    testFixturesApi(libs.postgresql)
+}
