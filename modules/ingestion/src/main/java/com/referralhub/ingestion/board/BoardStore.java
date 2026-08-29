@@ -46,6 +46,29 @@ public class BoardStore {
         this.jdbc = jdbc;
     }
 
+    /** Company lookup for downstream modules; they never read the table directly. */
+    public Optional<CompanyRecord> findCompany(UUID companyId) {
+        return jdbc.query("SELECT id, name, slug, email_domain, careers_url FROM company WHERE id = ?",
+                (rs, rowNum) -> new CompanyRecord(
+                        rs.getObject("id", UUID.class),
+                        rs.getString("name"),
+                        rs.getString("slug"),
+                        rs.getString("email_domain"),
+                        rs.getString("careers_url")), companyId)
+                .stream().findFirst();
+    }
+
+    public Optional<CompanyRecord> findCompanyBySlug(String slug) {
+        return jdbc.query("SELECT id, name, slug, email_domain, careers_url FROM company WHERE slug = ?",
+                (rs, rowNum) -> new CompanyRecord(
+                        rs.getObject("id", UUID.class),
+                        rs.getString("name"),
+                        rs.getString("slug"),
+                        rs.getString("email_domain"),
+                        rs.getString("careers_url")), slug)
+                .stream().findFirst();
+    }
+
     public Optional<CompanyBoard> findById(UUID id) {
         return jdbc.query(SELECT + " WHERE b.id = ?", MAPPER, id).stream().findFirst();
     }
