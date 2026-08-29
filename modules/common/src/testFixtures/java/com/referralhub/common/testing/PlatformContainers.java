@@ -1,7 +1,9 @@
 package com.referralhub.common.testing;
 
 import java.time.Duration;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -75,9 +77,11 @@ public final class PlatformContainers {
                     .withEnv("discovery.type", "single-node")
                     .withEnv("DISABLE_SECURITY_PLUGIN", "true")
                     .withEnv("DISABLE_INSTALL_DEMO_CONFIG", "true")
-                    // Belt and braces: 2.12+ refuses to start without an admin password unless
-                    // security is off, and the two switches are honoured by different versions.
-                    .withEnv("plugins.security.disabled", "true")
+                    // Do NOT also pass plugins.security.disabled here. DISABLE_SECURITY_PLUGIN
+                    // makes the entrypoint remove the plugin outright, after which that setting
+                    // is unknown and OpenSearch exits with code 64 before it ever binds a port.
+                    // Adding it as "belt and braces" turned a slow start into an instant failure.
+                    //
                     // 512m is enough on a developer machine and not enough on a shared CI runner,
                     // where the JVM starts slowly and the cluster never reaches green in time.
                     .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1g -Xmx1g")

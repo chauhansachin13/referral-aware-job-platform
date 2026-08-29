@@ -77,6 +77,23 @@ class RedisTokenBucketRateLimiterIT {
         }
     }
 
+    /**
+     * Takes tokens until one is refused, and returns that refusal.
+     *
+     * <p>Counting out exactly {@code CAPACITY} attempts is the mistake this replaces: the bucket
+     * refills continuously, so on a machine where each round trip to Redis costs a millisecond
+     * or two the bucket is not empty after {@code CAPACITY} takes.
+     */
+    private RateLimitDecision drainCompletely(String host) {
+        for (int attempt = 0; attempt < 200; attempt++) {
+            RateLimitDecision decision = limiter.tryAcquire(host);
+            if (!decision.allowed()) {
+                return decision;
+            }
+        }
+        throw new AssertionError("bucket for " + host + " never refused a request in 200 attempts");
+    }
+
     @Test
     @DisplayName("20 threads hammering one host never collectively exceed capacity + refill")
     void concurrentWorkersRespectOneHostBudget() throws Exception {
@@ -157,9 +174,7 @@ class RedisTokenBucketRateLimiterIT {
     @DisplayName("hosts have independent buckets")
     void bucketsAreScopedPerHost() {
         String drained = "api.ashbyhq.com";
-        for (int i = 0; i < (int) CAPACITY; i++) {
-            limiter.tryAcquire(drained);
-        }
+        drainCompletely(drained);
 
         assertThat(limiter.tryAcquire(drained).allowed()).isFalse();
         assertThat(limiter.tryAcquire("boards-api.greenhouse.io").allowed()).isTrue();
@@ -169,11 +184,8 @@ class RedisTokenBucketRateLimiterIT {
     @DisplayName("a refused caller is told how long to wait, and the wait is enough")
     void retryAfterIsUsable() throws Exception {
         String host = "wait.example.com";
-        for (int i = 0; i < (int) CAPACITY; i++) {
-            limiter.tryAcquire(host);
-        }
+        RateLimitDecision denied = drainCompletely(host);
 
-        RateLimitDecision denied = limiter.tryAcquire(host);
         assertThat(denied.allowed()).isFalse();
         assertThat(denied.retryAfter()).isPositive();
 
@@ -184,10 +196,10 @@ class RedisTokenBucketRateLimiterIT {
     @DisplayName("tokens come back over time rather than being gone for good")
     void bucketRefills() throws Exception {
         String host = "refill.example.com";
-        for (int i = 0; i < (int) CAPACITY; i++) {
-            limiter.tryAcquire(host);
-        }
-        assertThat(limiter.tryAcquire(host).allowed()).isFalse();
+
+        // Drain until actually refused rather than assuming CAPACITY attempts is enough: the
+        // bucket refills while the loop runs, so on a slow runner the Nth attempt still succeeds.
+        drainCompletely(host);
 
         // At 5 permits/second, roughly 3 tokens are back after 600ms.
         Thread.sleep(700);
