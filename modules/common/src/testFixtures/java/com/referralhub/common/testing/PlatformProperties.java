@@ -20,6 +20,11 @@ public final class PlatformProperties {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
+    public static void redis(DynamicPropertyRegistry registry) {
+        registry.add("spring.data.redis.host", () -> PlatformContainers.redis().getHost());
+        registry.add("spring.data.redis.port", () -> PlatformContainers.redis().getMappedPort(6379));
+    }
+
     public static void kafka(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", () -> PlatformContainers.kafka().getBootstrapServers());
     }

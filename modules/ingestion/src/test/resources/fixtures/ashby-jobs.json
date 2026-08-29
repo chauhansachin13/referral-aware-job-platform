@@ -1,0 +1,25 @@
+{
+  "jobs": [
+    {
+      "id": "9f8e7d6c-2222-4b3c-8d4e-000000000001",
+      "title": "Member of Technical Staff, Platform",
+      "department": "Engineering",
+      "team": "Platform",
+      "location": "New York, NY",
+      "isRemote": false,
+      "publishedAt": "2026-08-19T11:00:00.000Z",
+      "jobUrl": "https://jobs.ashbyhq.com/acme/9f8e7d6c-2222-4b3c-8d4e-000000000001",
+      "descriptionHtml": "<p>Build the distributed systems underneath everything else.</p>"
+    },
+    {
+      "id": "9f8e7d6c-2222-4b3c-8d4e-000000000002",
+      "title": "Machine Learning Engineer",
+      "department": "Engineering",
+      "location": "London, UK",
+      "isRemote": true,
+      "publishedAt": "2026-08-22T08:15:00.000Z",
+      "jobUrl": "https://jobs.ashbyhq.com/acme/9f8e7d6c-2222-4b3c-8d4e-000000000002",
+      "descriptionHtml": "<p>Own ranking models end to end.</p>"
+    }
+  ]
+}

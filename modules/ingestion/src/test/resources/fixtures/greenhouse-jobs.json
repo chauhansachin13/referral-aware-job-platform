@@ -1,0 +1,30 @@
+{
+  "jobs": [
+    {
+      "id": 4012345,
+      "internal_job_id": 9001,
+      "title": "Senior Software Engineer, Payments",
+      "updated_at": "2026-08-20T14:02:11Z",
+      "location": { "name": "San Francisco, CA" },
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4012345",
+      "departments": [ { "id": 1, "name": "Engineering" } ],
+      "content": "&lt;p&gt;We are building the payments platform.&lt;/p&gt;&lt;p&gt;You will own ledger correctness.&lt;/p&gt;"
+    },
+    {
+      "id": 4012346,
+      "title": "Staff Engineer, Infrastructure (Remote)",
+      "updated_at": "2026-08-21T09:30:00Z",
+      "location": { "name": "Remote - United States" },
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/4012346",
+      "departments": [ { "id": 1, "name": "Engineering" } ],
+      "content": "&lt;p&gt;Own the Kubernetes platform and the build system.&lt;/p&gt;"
+    },
+    {
+      "id": 4012347,
+      "title": null,
+      "location": { "name": "Nowhere" },
+      "content": "malformed entry with no title"
+    }
+  ],
+  "meta": { "total": 3 }
+}

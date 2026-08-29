@@ -1,0 +1,30 @@
+[
+  {
+    "id": "b3f1c2d4-1111-4a2b-9c3d-000000000001",
+    "text": "Backend Engineer, Search",
+    "hostedUrl": "https://jobs.lever.co/acme/b3f1c2d4-1111-4a2b-9c3d-000000000001",
+    "applyUrl": "https://jobs.lever.co/acme/b3f1c2d4-1111-4a2b-9c3d-000000000001/apply",
+    "createdAt": 1755691331000,
+    "workplaceType": "onsite",
+    "categories": {
+      "commitment": "Full-time",
+      "location": "Bengaluru, India",
+      "team": "Search"
+    },
+    "description": "<p>Own relevance for our job search stack.</p>",
+    "descriptionPlain": "Own relevance for our job search stack."
+  },
+  {
+    "id": "b3f1c2d4-1111-4a2b-9c3d-000000000002",
+    "text": "Site Reliability Engineer",
+    "hostedUrl": "https://jobs.lever.co/acme/b3f1c2d4-1111-4a2b-9c3d-000000000002",
+    "createdAt": 1755777731000,
+    "workplaceType": "remote",
+    "categories": {
+      "commitment": "Full-time",
+      "location": "Anywhere",
+      "team": "Infrastructure"
+    },
+    "description": "<p>Keep the platform up.</p>"
+  }
+]

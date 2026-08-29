@@ -21,6 +21,7 @@ public final class PlatformContainers {
     private static final String KAFKA_IMAGE = "apache/kafka:3.9.0";
     private static final String MINIO_IMAGE = "minio/minio:RELEASE.2024-09-13T20-26-02Z";
     private static final String OPENSEARCH_IMAGE = "opensearchproject/opensearch:2.17.1";
+    private static final String REDIS_IMAGE = "redis:7-alpine";
 
     private PlatformContainers() {
     }
@@ -81,6 +82,23 @@ public final class PlatformContainers {
             container.start();
             return container;
         }
+    }
+
+    private static final class RedisHolder {
+        private static final GenericContainer<?> INSTANCE = start();
+
+        private static GenericContainer<?> start() {
+            GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse(REDIS_IMAGE))
+                    .withExposedPorts(6379)
+                    .waitingFor(Wait.forListeningPort())
+                    .withReuse(true);
+            container.start();
+            return container;
+        }
+    }
+
+    public static GenericContainer<?> redis() {
+        return RedisHolder.INSTANCE;
     }
 
     public static PostgreSQLContainer<?> postgres() {
