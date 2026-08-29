@@ -52,6 +52,12 @@ jobs:
             modules/*/build/test-results/test
           retention-days: 7
 
+      - name: Architecture rules
+        # Reported separately so a boundary violation is obvious in the job list rather than
+        # buried among 300 test names.
+        if: always()
+        run: ./gradlew :app:test --tests '*ArchitectureTest*' --no-daemon
+
       - name: Publish coverage
         if: always()
         uses: actions/upload-artifact@v5

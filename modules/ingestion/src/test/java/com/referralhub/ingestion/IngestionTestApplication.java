@@ -1,6 +1,9 @@
 package com.referralhub.ingestion;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 
 /**
  * Boot entry point for this module's integration tests only.
@@ -11,4 +14,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication(scanBasePackages = {"com.referralhub.common", "com.referralhub.ingestion"})
 public class IngestionTestApplication {
+
+    /**
+     * A registry, because nothing else provides one here.
+     *
+     * <p>Micrometer's registry is auto-configured by {@code spring-boot-starter-actuator}, which
+     * only the {@code app} module depends on. A feature module that instruments itself must
+     * therefore bring its own registry in tests, or every {@code MeterRegistry} injection point
+     * fails at context load — which is exactly how this was found.
+     */
+    @Bean
+    public MeterRegistry meterRegistry() {
+        return new SimpleMeterRegistry();
+    }
 }

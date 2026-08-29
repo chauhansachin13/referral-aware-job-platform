@@ -6,6 +6,7 @@ plugins {
 
 val springBootVersion = libs.versions.springBoot.get()
 val awsSdkVersion = libs.versions.awsSdk.get()
+val jqwikVersion = libs.versions.jqwik.get()
 
 allprojects {
     group = "com.referralhub"
@@ -41,6 +42,9 @@ subprojects {
         add("testImplementation", "org.assertj:assertj-core")
         add("testImplementation", "org.mockito:mockito-junit-jupiter")
         add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+
+        // Property-based tests run on their own JUnit Platform engine alongside Jupiter.
+        add("testImplementation", "net.jqwik:jqwik:$jqwikVersion")
     }
 
     tasks.withType<JavaCompile>().configureEach {
@@ -49,6 +53,9 @@ subprojects {
     }
 
     tasks.withType<Test>().configureEach {
+        // Three engines: Jupiter for example-based tests, jqwik for property-based ones, and
+        // ArchUnit for the architecture rules. Left unfiltered on purpose — an explicit
+        // includeEngines list silently discovers zero tests the moment an engine is added.
         useJUnitPlatform()
         // Integration tests self-disable when no Docker daemon is reachable
         // (see common's DockerAvailable condition), so this stays green offline.

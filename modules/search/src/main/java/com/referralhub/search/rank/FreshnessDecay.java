@@ -21,7 +21,13 @@ public final class FreshnessDecay {
     }
 
     /**
-     * @return a multiplier in (0, 1]; exactly 1.0 for a posting with no age or a future date
+     * @return a multiplier in [0, 1]; exactly 1.0 for a posting with no age or a future date
+     *
+     * <p>The lower bound is 0 rather than an open interval: {@code 0.5^n} underflows to exactly
+     * zero past roughly 1,075 half-lives, so a posting years older than the half-life scores 0
+     * and is ordered only by the id tiebreak. That is the right outcome — such a posting is
+     * certainly filled — but it is worth stating, because a score of exactly zero means recency
+     * has fully overridden relevance rather than merely discounted it.
      */
     public static double multiplier(Instant postedAt, Instant now, Duration halfLife) {
         if (postedAt == null) {

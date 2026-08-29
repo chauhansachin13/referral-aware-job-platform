@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
   schedule:
     # Dependencies rot without any commit touching them, so this runs on a timer too.
     - cron: '0 6 * * 1'
@@ -13,6 +14,29 @@ permissions:
   security-events: write
 
 jobs:
+  mutation:
+    name: Mutation testing
+    runs-on: ubuntu-latest
+    # Only on a schedule and on demand: PIT re-runs the suite once per surviving mutant, which
+    # is minutes rather than seconds and is not worth blocking a pull request on.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Run PIT
+        run: ./gradlew :dedup:pitest :trust:pitest :referral:pitest :search:pitest --no-daemon
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: mutation-reports
+          path: modules/*/build/reports/pitest
+          retention-days: 14
+
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest

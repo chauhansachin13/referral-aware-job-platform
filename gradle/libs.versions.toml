@@ -7,6 +7,11 @@ jmh = "1.37"
 springdoc = "2.8.17"
 resilience4j = "2.3.0"
 jmhPlugin = "0.7.3"
+archunit = "1.5.0"
+jqwik = "1.10.1"
+pitest = "1.30.0"
+pitestJunit5 = "1.2.3"
+pitestPlugin = "1.19.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
@@ -40,6 +45,8 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310" }
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+archunit = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 assertj = { module = "org.assertj:assertj-core" }
 mockito-junit = { module = "org.mockito:mockito-junit-jupiter" }
 awaitility = { module = "org.awaitility:awaitility" }
@@ -57,3 +64,4 @@ jmh-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
 jmh = { id = "me.champeau.jmh", version.ref = "jmhPlugin" }
+pitest = { id = "info.solidsoft.pitest", version.ref = "pitestPlugin" }

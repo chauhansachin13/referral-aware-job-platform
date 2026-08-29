@@ -62,6 +62,36 @@ coverage: ## Produce the JaCoCo reports
 	$(GRADLE) test jacocoTestReport
 	@echo "Reports: modules/*/build/reports/jacoco/test/html/index.html"
 
+.PHONY: arch
+arch: ## Run the architecture rules only
+	$(GRADLE) :app:test --tests '*ArchitectureTest*'
+
+.PHONY: properties
+properties: ## Run the property-based tests only
+	$(GRADLE) test --tests '*Properties*'
+
+.PHONY: mutation
+mutation: ## Mutation testing on the decision-logic modules (slow: several minutes)
+	$(GRADLE) :dedup:pitest :trust:pitest :referral:pitest :search:pitest
+	@echo "Reports: modules/*/build/reports/pitest/index.html"
+
+.PHONY: e2e
+e2e: deps ## Run the end-to-end pipeline test against real containers
+	REFERRALHUB_FORCE_DOCKER=true $(GRADLE) :app:test --tests '*EndToEndPipelineIT*'
+
+.PHONY: seed-corpus
+seed-corpus: deps ## Seed a realistic synthetic corpus (200 companies x 25 postings)
+	$(GRADLE) :app:bootRun --args=' \
+		--referralhub.loadgen.seed-corpus=true \
+		--referralhub.ingestion.crawl-enabled=false'
+
+.PHONY: loadtest
+loadtest: deps ## Seed a corpus, then drive concurrent searches and report latency
+	$(GRADLE) :app:bootRun --args=' \
+		--referralhub.loadgen.seed-corpus=true \
+		--referralhub.loadgen.drive-searches=true \
+		--referralhub.ingestion.crawl-enabled=false'
+
 .PHONY: bench
 bench: ## Run the JMH benchmark suite (slow: several minutes)
 	$(GRADLE) :benchmarks:jmh

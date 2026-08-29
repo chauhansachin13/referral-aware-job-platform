@@ -101,8 +101,8 @@ class ReferralStateTest {
     @DisplayName("the exception names the moves that were available instead")
     void exceptionIsActionable() {
         IllegalTransitionException exception = org.assertj.core.api.Assertions.catchThrowableOfType(
-                () -> ReferralState.SUBMITTED.transitionTo(ReferralState.ACCEPTED),
-                IllegalTransitionException.class);
+                IllegalTransitionException.class,
+                () -> ReferralState.SUBMITTED.transitionTo(ReferralState.ACCEPTED));
 
         assertThat(exception.from()).isEqualTo(ReferralState.SUBMITTED);
         assertThat(exception.to()).isEqualTo(ReferralState.ACCEPTED);

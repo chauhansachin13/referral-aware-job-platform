@@ -350,42 +350,145 @@ have: not wrong numbers, but absent ones that nobody notices.
 
 ## Testing
 
-```
-module        tests  passed  skipped  failed
-common           28      18       10       0
-dedup            70      70        0       0
-ingestion        40      29       11       0
-referral         74      63       11       0
-search           40      34        6       0
-trust            25      25        0       0
-TOTAL           277     239       38       0
-```
+Six kinds of test, each answering a question the others cannot.
 
-The 38 skipped are Testcontainers integration tests. They are **not optional** — CI always has a
-Docker daemon and always runs them. `@RequiresDocker` disables them on a machine without one so
-`./gradlew test` is honestly green rather than a wall of connection errors that trains people to
-ignore test output. Force them locally with `make verify`.
+| kind | count | needs Docker |
+|---|---:|---|
+| Unit | 290 | no |
+| Property-based (jqwik) | 45 | no |
+| HTTP contract (MockMvc) | 28 | no |
+| Architecture (ArchUnit) | 18 | no |
+| Integration and end-to-end (Testcontainers) | 45 | yes |
+| **Total** | **426** | |
 
-What the integration tests actually prove, as opposed to asserting that a mock was called:
+| module | tests | passed | skipped | failed |
+|---|---:|---:|---:|---:|
+| app | 53 | 46 | 7 | 0 |
+| common | 35 | 25 | 10 | 0 |
+| dedup | 105 | 105 | 0 | 0 |
+| ingestion | 45 | 34 | 11 | 0 |
+| referral | 108 | 97 | 11 | 0 |
+| search | 48 | 42 | 6 | 0 |
+| trust | 32 | 32 | 0 | 0 |
+| **TOTAL** | **426** | **381** | **45** | **0** |
 
-- `FOR UPDATE SKIP LOCKED` gives two concurrent relays disjoint batches (no in-memory database
-  implements this faithfully).
-- A rolled-back business transaction leaves no outbox row.
-- 20 threads cannot collectively exceed one host's token bucket.
-- A 304 transfers no body, writes no payload row and emits no event — asserted over a real socket
-  against a real HTTP server, and again through the whole pipeline.
-- A cosmetically reordered board response produces new bytes and zero events.
-- A semantically equivalent query with zero token overlap retrieves the right job through
-  OpenSearch.
-- Two equally relevant jobs order by recency, with the fused scores asserted equal to prove the
-  decay is what separated them.
-- Replaying a referral transition with the same idempotency key writes one audit row, not two,
-  and does not inflate the referrer's reputation counters.
+The 45 skipped are the Docker-gated ones; on this machine no daemon is available, so they are
+verified in CI. Everything else runs everywhere.
 
-Some claims are proved at the level where they are actually decided rather than only end-to-end.
-Whether "k8s" finds "container orchestration" is a property of the vector space: if the vectors
-are close, HNSW returns them, and if they are not, no index tuning helps. So that runs on every
-build with no Docker, and the integration test confirms it survives the round trip.
+### Unit — 290
+
+Example-based tests over pure logic: the adaptive scheduler, the title normalizer, MinHash and
+LSH banding, reciprocal rank fusion, freshness decay, the Wilson bound, the scoring gates.
+No mocks of things this code owns, because a test that asserts a mock was called asserts nothing
+about behaviour.
+
+Two run against real sockets rather than test doubles: `ConditionalFetcherTest` serves HTTP from
+the JDK's own server to prove a 304 transfers no body, and `ConceptEmbeddingTest` proves the
+zero-token-overlap claim at the vector-space level so it is verified on every build rather than
+only where Docker exists.
+
+### Property-based (jqwik) — 45
+
+Invariants over generated inputs. These catch the input shapes nobody thinks to write a test for:
+
+- **any** walk through the referral state machine stays on the graph, terminates within three
+  steps, and never escapes a terminal state;
+- **any** combination of queue length, pool size and capacities leaves no referrer over-assigned
+  and no request placed twice;
+- **any** string survives normalization without throwing, and normalizing twice equals
+  normalizing once — the property a re-parse of stored raw payloads depends on;
+- **any** posting rate and backoff count produces a crawl interval inside its configured bounds;
+- **any** counter combination produces a Wilson bound inside [0, 1] that never exceeds the
+  observed rate.
+
+One of these found a real contract error: exponential freshness decay underflows to exactly
+zero past roughly 1,075 half-lives, so the Javadoc's `(0, 1]` was wrong. The behaviour is
+correct — a posting that old is certainly filled — but the documented contract was not.
+
+### Architecture (ArchUnit) — 18
+
+The module graph the README claims, enforced. Gradle stops a module depending on another at the
+build-file level, but nothing stops a package reaching into a neighbour's internals once both are
+on one classpath — which, in a modular monolith, they always are.
+
+Beyond the dependency rules: controllers live only in `api` packages and are never called from
+services; `*Store` classes are `@Repository`; `*Properties` classes are bound configuration;
+every `DomainEvent` is a record; there is no field injection; and **no feature module may touch
+`KafkaTemplate` directly**, which is what keeps the transactional outbox from being quietly
+bypassed.
+
+### HTTP contract (MockMvc) — 28
+
+The wire contract: status codes, the single `ApiError` shape, validation messages, header
+handling. These proved that an unsupported ATS is rejected before anything is written, that
+`Retry-After` is populated on a 429, that a resume download is `no-store` and an attachment, and
+that an internal failure returns `Something went wrong` rather than a connection string.
+
+One found a real bug: `@Min`/`@Max` on the search endpoint were **dead**, because the controller
+lacked `@Validated`. An oversized page was silently clamped instead of refused. A validation
+annotation that does nothing is worse than none — it reads like protection.
+
+### Integration and end-to-end (Testcontainers) — 45
+
+Real Postgres, Redis, Kafka, OpenSearch and MinIO. Not optional: CI always has a daemon and
+always runs them. `@RequiresDocker` skips them on a machine without one so `./gradlew test` is
+honestly green rather than a wall of connection errors that trains people to ignore output.
+Force them locally with `make verify`.
+
+What they prove, as opposed to what a mock would:
+
+- `FOR UPDATE SKIP LOCKED` gives two concurrent relays disjoint batches — no in-memory database
+  implements this faithfully;
+- a rolled-back business transaction leaves no outbox row;
+- 20 threads cannot collectively exceed one host's token bucket;
+- a 304, and separately a validator-less resend of identical bytes, cost no payload row and no
+  event;
+- a cosmetically reordered board response produces new bytes and zero events;
+- replaying a referral transition with the same idempotency key writes one audit row, not two,
+  and does not inflate reputation counters.
+
+`EndToEndPipelineIT` runs one job the whole way: stub ATS board → crawl → three postings stored
+with three outbox events → dedup collapses a repost into one canonical job with two sources →
+index → search finds it by paraphrase → resume encrypted into MinIO → referral requested,
+accepted, resume released through a signed link, submitted, closed → resume hard-deleted while
+the referral survives. The only stub is the ATS board itself, because a test that depends on a
+third party's live listings fails for reasons unrelated to this code.
+
+### Mutation (PIT) — opt-in
+
+Line coverage says a line ran. A mutation score says a test would have *noticed* if that line
+were wrong, which is the property that matters for decision logic.
+
+| module | killed / covered | score |
+|---|---:|---:|
+| dedup | 187 / 213 | 87% |
+| referral | 102 / 119 | 85% |
+| trust | 65 / 70 | 93% |
+| search | 91 / 113 | 80% |
+
+This changed the tests rather than just measuring them. The first run scored dedup at 75% and
+referral at 72%, with survivors concentrated in `locationGate`, `locationScore`, `titleScore`,
+`seniorityFit` and `jaccard` — branches reachable only through a final aggregate score, where
+several different wrong constants produce the same decision on any given example. That is exactly
+how a threshold ends up silently off by a rung. Adding direct branch-level tests moved dedup to
+87% and referral to 85%.
+
+Writing those tests also caught a false belief of my own: an assertion that responsiveness
+outweighs org affinity, when both are deliberately weighted 0.30.
+
+The remaining un-covered mutations are in services and stores whose tests are Docker-gated and
+therefore excluded from PIT. Run with `make mutation`; it is scheduled weekly in CI rather than
+blocking a pull request, because it re-runs the suite once per surviving mutant.
+
+### Load
+
+`make loadtest` seeds a deterministic synthetic corpus through the real services — so the rows,
+canonical jobs and index entries are what a crawl would have produced — and then drives
+concurrent searches, reporting p50/p95/p99/p999 and throughput. It measures what a caller
+experiences, including the OpenSearch round trip, which the JMH suite deliberately excludes.
+
+`make seed-corpus` does the seeding alone. Both are gated behind explicit flags; neither is
+something to point at a real database.
 
 ---
 

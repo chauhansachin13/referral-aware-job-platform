@@ -42,7 +42,9 @@ import org.springframework.test.context.DynamicPropertySource;
         "referralhub.ingestion.crawl-enabled=false",
         "referralhub.search.indexer-enabled=false",
         "referralhub.dedup.consumer-enabled=false",
-        "referralhub.referral.expiry-enabled=false",
+        // expiry-enabled is deliberately left on: the test drives expireBatch() directly, and
+        // the @Scheduled trigger cannot fire because this test application does not enable
+        // scheduling. Disabling it removed the very bean the test autowires.
         "spring.flyway.locations=classpath:db/migration/common,classpath:db/migration/ingestion,"
                 + "classpath:db/migration/dedup,classpath:db/migration/referral,"
                 + "classpath:db/migration/trust",

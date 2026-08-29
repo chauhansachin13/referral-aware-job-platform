@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +16,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * {@code @Validated} is load-bearing: without it Spring never evaluates the {@code @Min} and
+ * {@code @Max} on the method parameters below, and an oversized page is silently clamped by
+ * {@link SearchRequest} instead of being refused. A validation annotation that does nothing is
+ * worse than no annotation, because it reads like protection.
+ *
+ * <p>The clamp in {@code SearchRequest} stays as defence in depth for callers that do not arrive
+ * over HTTP.
+ */
 @RestController
+@Validated
 @RequestMapping("/api/v1/search")
 public class SearchController {
 

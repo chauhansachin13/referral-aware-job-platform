@@ -20,6 +20,9 @@ dependencies {
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":common")))
+    // Architecture rules live here because app is the only module whose classpath contains
+    // all six feature modules at once, which is what makes the boundary rules checkable.
+    testImplementation(libs.archunit)
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
