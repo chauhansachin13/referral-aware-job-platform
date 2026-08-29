@@ -12,6 +12,7 @@ jqwik = "1.10.1"
 pitest = "1.30.0"
 pitestJunit5 = "1.2.3"
 pitestPlugin = "1.19.0"
+opensearchTestcontainers = "4.1.0"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "springBoot" }
@@ -57,6 +58,7 @@ testcontainers-postgres = { module = "org.testcontainers:postgresql" }
 testcontainers-kafka = { module = "org.testcontainers:kafka" }
 testcontainers-minio = { module = "org.testcontainers:minio" }
 testcontainers-core = { module = "org.testcontainers:testcontainers" }
+testcontainers-opensearch = { module = "org.opensearch:opensearch-testcontainers", version.ref = "opensearchTestcontainers" }
 
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }

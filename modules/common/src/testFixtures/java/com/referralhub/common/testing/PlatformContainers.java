@@ -1,9 +1,9 @@
 package com.referralhub.common.testing;
 
 import java.time.Duration;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.opensearch.testcontainers.OpenSearchContainer;
+import org.testcontainers.containers.output.ToStringConsumer;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -69,57 +69,46 @@ public final class PlatformContainers {
     }
 
     private static final class OpenSearchHolder {
-        private static final GenericContainer<?> INSTANCE = start();
+        private static final OpenSearchContainer<?> INSTANCE = start();
 
-        private static GenericContainer<?> start() {
-            GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse(OPENSEARCH_IMAGE))
-                    .withExposedPorts(9200)
-                    .withEnv("discovery.type", "single-node")
-                    .withEnv("DISABLE_SECURITY_PLUGIN", "true")
-                    .withEnv("DISABLE_INSTALL_DEMO_CONFIG", "true")
-                    // Do NOT also pass plugins.security.disabled. DISABLE_SECURITY_PLUGIN makes
-                    // the entrypoint remove the plugin outright, after which that setting is
-                    // unknown and OpenSearch exits with code 64 before it binds a port. Adding it
-                    // as "belt and braces" turned a slow start into an instant failure.
-                    .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1g -Xmx1g")
-                    .withEnv("bootstrap.memory_lock", "false")
-                    // Two stages rather than one. A single HTTP wait cannot distinguish "the
-                    // process died" from "the cluster is still forming", and reports both as a
-                    // timeout — which is what sent the last diagnosis down the wrong path.
-                    .waitingFor(new org.testcontainers.containers.wait.strategy.WaitAllStrategy()
-                            .withStrategy(Wait.forListeningPort())
-                            .withStrategy(Wait.forHttp("/_cluster/health")
-                                    .forPort(9200)
-                                    .forStatusCodeMatching(code -> code == 200 || code == 401))
-                            .withStartupTimeout(Duration.ofMinutes(4)))
-                    .withStartupTimeout(Duration.ofMinutes(4))
-                    .withReuse(true);
+        private static OpenSearchContainer<?> start() {
+            // The official module rather than a hand-rolled GenericContainer.
+            //
+            // Configuring OpenSearch by hand cost several CI cycles: DISABLE_SECURITY_PLUGIN
+            // removes the plugin, which makes plugins.security.disabled an unknown setting and
+            // exits the process with code 64; and a plain HTTP wait reports "the process died"
+            // and "the cluster is still forming" identically. This module already encodes which
+            // switches a given version needs and what to wait for.
+            OpenSearchContainer<?> container =
+                    new OpenSearchContainer<>(DockerImageName.parse(OPENSEARCH_IMAGE))
+                            .withEnv("OPENSEARCH_JAVA_OPTS", "-Xms1g -Xmx1g")
+                            .withStartupTimeout(Duration.ofMinutes(4))
+                            .withReuse(true);
+
+            // Accumulated in memory, so the log survives Testcontainers removing the failed
+            // container. getLogs() on a dead container returns nothing, which is how the last
+            // attempt produced an empty diagnosis.
+            ToStringConsumer captured = new ToStringConsumer();
+            container.withLogConsumer(captured);
+
             try {
                 container.start();
             } catch (RuntimeException e) {
-                // Container logs go to stdout, which the Gradle test task does not echo. An
-                // exception message always survives, so the diagnosis travels with the failure
-                // instead of requiring another CI round trip to obtain.
                 throw new IllegalStateException(
                         "OpenSearch container failed to start.\n--- container log ---\n"
-                                + tailOf(safeLogs(container)) + "\n--- end container log ---", e);
+                                + tail(captured.toUtf8String()) + "\n--- end container log ---", e);
             }
             return container;
         }
     }
 
-    private static String safeLogs(GenericContainer<?> container) {
-        try {
-            return container.getLogs();
-        } catch (RuntimeException e) {
-            return "(container logs unavailable: " + e + ")";
+    /** Last 60 lines; the startup banner is long and the failure is always at the end. */
+    private static String tail(String logs) {
+        if (logs == null || logs.isBlank()) {
+            return "(container produced no output)";
         }
-    }
-
-    /** Last 80 lines; the startup banner is long and the failure is always at the end. */
-    private static String tailOf(String logs) {
         String[] lines = logs.split("\n");
-        int from = Math.max(0, lines.length - 80);
+        int from = Math.max(0, lines.length - 60);
         return String.join("\n", java.util.Arrays.copyOfRange(lines, from, lines.length));
     }
 
@@ -152,12 +141,12 @@ public final class PlatformContainers {
         return MinioHolder.INSTANCE;
     }
 
-    public static GenericContainer<?> openSearch() {
+    public static OpenSearchContainer<?> openSearch() {
         return OpenSearchHolder.INSTANCE;
     }
 
+    /** Uses the module's own accessor rather than assuming the mapped port. */
     public static String openSearchUri() {
-        GenericContainer<?> os = openSearch();
-        return "http://" + os.getHost() + ":" + os.getMappedPort(9200);
+        return openSearch().getHttpHostAddress();
     }
 }

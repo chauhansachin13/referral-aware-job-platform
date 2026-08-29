@@ -20,6 +20,9 @@ dependencies {
     testFixturesApi(libs.testcontainers.postgres)
     testFixturesApi(libs.testcontainers.kafka)
     testFixturesApi(libs.testcontainers.minio)
+    // Purpose-built: it knows which OpenSearch versions need the security plugin disabled
+    // and which startup signal to wait for, both of which cost several CI cycles by hand.
+    testFixturesApi(libs.testcontainers.opensearch)
     testFixturesApi(libs.junit.jupiter)
     testFixturesApi(libs.spring.boot.starter.test)
     testFixturesApi(libs.flyway.core)
