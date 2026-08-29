@@ -16,6 +16,9 @@ dependencies {
 }
 
 jmh {
+    // ./gradlew :benchmarks:jmh -Pjmh.include=MatcherBenchmark runs one class instead of all of
+    // them; the full suite takes several minutes.
+    (project.findProperty("jmh.include") as String?)?.let { includes.set(listOf(it)) }
     warmupIterations.set(3)
     iterations.set(5)
     fork.set(1)

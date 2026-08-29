@@ -4,6 +4,7 @@ import com.referralhub.referral.match.MatchingWeights;
 import com.referralhub.referral.match.ReferralMatcher;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -60,7 +61,7 @@ public class MatcherBenchmark {
                     new UUID(1L, i), new UUID(2L, i), new UUID(3L, i % 40),
                     departments[random.nextInt(departments.length)],
                     levels[random.nextInt(levels.length)],
-                    Set.of(tech[random.nextInt(tech.length)], tech[random.nextInt(tech.length)]),
+                    pick(random, tech),
                     base.plusSeconds(i)));
         }
 
@@ -70,10 +71,25 @@ public class MatcherBenchmark {
                     new UUID(4L, i),
                     departments[random.nextInt(departments.length)],
                     levels[random.nextInt(levels.length)],
-                    Set.of(tech[random.nextInt(tech.length)], tech[random.nextInt(tech.length)]),
+                    pick(random, tech),
                     random.nextDouble(),
                     1 + random.nextInt(5)));
         }
+    }
+
+    /**
+     * Two distinct technologies.
+     *
+     * <p>Not {@code Set.of(a, b)}: that throws on duplicate elements, and drawing twice from a
+     * six-element array collides constantly. The first version of this benchmark did exactly
+     * that and failed in setup, which is why it produced no results at all rather than bad ones.
+     */
+    private static Set<String> pick(Random random, String[] values) {
+        Set<String> chosen = new HashSet<>(2);
+        while (chosen.size() < 2) {
+            chosen.add(values[random.nextInt(values.length)]);
+        }
+        return chosen;
     }
 
     @Benchmark

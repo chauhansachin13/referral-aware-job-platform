@@ -255,7 +255,93 @@ These are **single-machine microbenchmarks of the CPU-bound work**, not end-to-e
 throughput. Network, Postgres and OpenSearch are excluded, which is the point: they measure the
 parts this codebase controls.
 
-<!-- BENCHMARK_RESULTS -->
+### Deduplication — a 200,000-job corpus
+
+| benchmark | p50 | p99 | p999 |
+|---|---:|---:|---:|
+| LSH candidate generation (16 band lookups) | 62.7 µs | 104.8 µs | 199.9 µs |
+| LSH retrieval + exact scoring of the top 25 | 77.6 µs | 143.9 µs | 254.2 µs |
+
+| baseline | mean |
+|---|---:|
+| Fingerprint one posting (normalize, shingle, 128 permutations) | 41.6 µs ± 0.77 |
+| Exact scoring, 2,000 comparisons (no index) | 1.647 ms ± 0.12 |
+
+The second table is the argument for the first. Exact scoring costs **0.82 µs per pair**, so
+comparing one posting against all 200,000 canonical jobs would take roughly **165 ms**. The
+indexed path — band lookup plus exact scoring of a 25-candidate shortlist — does the same job in
+**77.6 µs at p50**, about **2,100× less work**.
+
+That ratio is the whole reason the two-stage design exists, and it is why the linear-scan
+baseline is measured over a 2,000-row slice rather than the full corpus: at 165 ms per operation
+the harness would spend its entire budget on a handful of iterations.
+
+### Ingestion — cost of one crawl, network excluded
+
+| benchmark | 200 postings | 800 postings |
+|---|---:|---:|
+| Raw content hash only (the short-circuit) | 46.8 µs | 186.3 µs |
+| Parse the board response | 0.749 ms | 3.029 ms |
+| Semantic hash (normalize + hash every posting) | 3.101 ms | 13.366 ms |
+| Full ingest path (hash → parse → hash → per-posting hash) | 7.387 ms | 27.842 ms |
+
+Three tiers, and the gaps between them are the design:
+
+- A **304** costs one `UPDATE`. No body is transferred and none of the rows above run.
+- A board that offers no validators but resends identical bytes costs the **raw hash only**:
+  186 µs against 27.8 ms for the full path, or **150× cheaper**.
+- Only genuinely new bytes pay the full 27.8 ms — and even then, the semantic hash decides
+  whether any event is worth emitting.
+
+### Search — the application's share of query latency
+
+| benchmark | depth 50 | depth 200 | depth 500 |
+|---|---:|---:|---:|
+| Embed the query | 6.24 µs | 6.24 µs | 6.20 µs |
+| RRF fusion (p50) | 2.25 µs | 10.91 µs | 27.90 µs |
+| Fusion + freshness decay + final sort (p50) | 5.62 µs | 25.57 µs | 65.79 µs |
+| **Full application path (p50 / p99 / p999)** | **13.7 / 19.1 / 41.1 µs** | **33.0 / 41.0 / 107.3 µs** | **72.2 / 85.4 / 356.9 µs** |
+
+Query embedding is flat, as it must be — it does not depend on how deep retrieval goes. Everything
+after the OpenSearch response scales linearly with `candidate-depth`, which is exactly why that
+setting is configuration and not a constant: raising it from 200 to 500 more than doubles the
+application's contribution to latency.
+
+The OpenSearch round trip is **not** included here and dominates in practice. A single-node
+container's latency says nothing useful about a real cluster's, so it is measured in the
+integration environment instead of being reported as a number that would not survive contact with
+production.
+
+### Referral matching
+
+| pending requests | referrers | p50 | p99 | p999 |
+|---:|---:|---:|---:|---:|
+| 50 | 3 | 7.8 µs | 9.9 µs | 18.0 µs |
+| 400 | 3 | 10.4 µs | 13.1 µs | 20.9 µs |
+| 2,000 | 3 | 27.8 µs | 34.5 µs | 39.8 µs |
+| 50 | 25 | 289.3 µs | 329.9 µs | 586.6 µs |
+| 400 | 25 | 308.7 µs | 351.7 µs | 596.0 µs |
+| 2,000 | 25 | 568.3 µs | 815.4 µs | 884.3 µs |
+
+Worth reading carefully, because the shape is not the obvious one: **2,000 requests against 3
+referrers (27.8 µs) is an order of magnitude cheaper than 50 requests against 25 (289.3 µs)**,
+despite similar nominal pair counts.
+
+The reason is that the matcher short-circuits. Once every referrer is at capacity, the inner loop
+skips them without scoring, so cost tracks *placements actually attempted* rather than queue
+length. Three referrers with capacities of one to five saturate after a handful of assignments and
+the remaining 1,990 requests cost almost nothing. That is the realistic case — a marketplace is
+supply-constrained — and it means queue growth does not translate into matcher cost.
+
+### A benchmark bug worth recording
+
+The matcher benchmark produced no results at all on the first run. Its setup built referrer
+profiles with `Set.of(tech[random], tech[random])`, and `Set.of` throws on duplicate elements —
+drawing twice from a six-element array collides almost immediately. JMH reported the failure and
+carried on with the other classes, so the suite went green with one benchmark silently missing.
+
+Recorded here rather than quietly fixed because it is the failure mode benchmark suites actually
+have: not wrong numbers, but absent ones that nobody notices.
 
 **Reproduce:** `make bench` (several minutes). Raw JSON lands in
 `modules/benchmarks/build/reports/jmh/results.json`.
