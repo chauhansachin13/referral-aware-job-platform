@@ -9,6 +9,21 @@ ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD:-change-me-in-any-real-deployment}"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 ok()   { echo "  ok  $*"; }
 
+# Reports the status alongside the failure. Without it a refused request and a missing route
+# look identical, which cost a CI round trip when /actuator/prometheus quietly moved behind
+# authentication.
+status_of() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+
+expect_body() {
+  local what="$1" url="$2" needle="$3"; shift 3
+  local body
+  if ! body=$(curl -sf "$url" "$@" 2>/dev/null); then
+    fail "$what: HTTP $(status_of "$url" "$@") from $url"
+  fi
+  echo "$body" | grep -q "$needle" || fail "$what: response did not contain '$needle'"
+  ok "$what"
+}
+
 echo "Smoke testing $BASE"
 
 for _ in $(seq 1 60); do
@@ -21,24 +36,17 @@ ok "readiness"
 curl -sf "$BASE/actuator/health/liveness" | grep -q UP || fail "liveness is down"
 ok "liveness"
 
-curl -sf "$BASE/actuator/prometheus" | grep -q 'jvm_memory_used_bytes' \
-  || fail "prometheus endpoint is not exporting metrics"
-ok "metrics"
+expect_body "metrics" "$BASE/actuator/prometheus" 'jvm_memory_used_bytes'
 
 # ---------------------------------------------------------------------------------------
 # Public surface
 # ---------------------------------------------------------------------------------------
-curl -sf "$BASE/api/v1/dedup/banding" | grep -q 'similarityThreshold' \
-  || fail "dedup banding endpoint did not answer"
-ok "dedup configuration (public)"
+expect_body "dedup configuration (public)" "$BASE/api/v1/dedup/banding" 'similarityThreshold'
 
 # An empty index must return an empty page, not a 500.
-curl -sf "$BASE/api/v1/search?q=engineer&size=1" | grep -q 'hits' \
-  || fail "search endpoint did not answer (is OpenSearch reachable?)"
-ok "search (public)"
+expect_body "search (public)" "$BASE/api/v1/search?q=engineer&size=1" 'hits'
 
-curl -sf "$BASE/v3/api-docs" | grep -q 'openapi' || fail "OpenAPI document is missing"
-ok "openapi"
+expect_body "openapi" "$BASE/v3/api-docs" 'openapi'
 
 # ---------------------------------------------------------------------------------------
 # Authentication is actually enforced
@@ -63,13 +71,10 @@ TOKEN=$(curl -sf -X POST "$BASE/api/v1/auth/login" \
 [ -n "$TOKEN" ] || fail "login returned an empty token"
 ok "administrator login"
 
-curl -sf "$BASE/api/v1/auth/me" -H "Authorization: Bearer $TOKEN" | grep -q 'ADMIN' \
-  || fail "the token does not carry the ADMIN role"
-ok "token carries its roles"
+expect_body "token carries its roles" "$BASE/api/v1/auth/me" 'ADMIN' -H "Authorization: Bearer $TOKEN"
 
-curl -sf "$BASE/api/v1/ingestion/queue" -H "Authorization: Bearer $TOKEN" | grep -q 'scheduledBoards' \
-  || fail "authenticated ingestion queue call failed (is Redis reachable?)"
-ok "ingestion queue (authenticated)"
+expect_body "ingestion queue (authenticated)" "$BASE/api/v1/ingestion/queue" 'scheduledBoards' \
+  -H "Authorization: Bearer $TOKEN"
 
 # A token with no ADMIN role must not be able to register a board.
 curl -sf -X POST "$BASE/api/v1/auth/register" \
@@ -87,8 +92,7 @@ status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/v1/ingestion/
 [ "$status" = "403" ] || fail "an ordinary account registering a board returned $status, not 403"
 ok "ordinary accounts cannot register boards"
 
-curl -sf "$BASE/api/v1/trust/standing" -H "Authorization: Bearer $USER_TOKEN" | grep -q 'reputation' \
-  || fail "standing endpoint did not answer for an authenticated user"
-ok "standing (authenticated)"
+expect_body "standing (authenticated)" "$BASE/api/v1/trust/standing" 'reputation' \
+  -H "Authorization: Bearer $USER_TOKEN"
 
 echo "All smoke checks passed."

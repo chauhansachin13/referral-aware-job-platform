@@ -2,6 +2,8 @@ package com.referralhub.app;
 
 import com.referralhub.common.error.ApiError;
 import com.referralhub.common.json.Json;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -54,7 +56,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // --- public -------------------------------------------------------
                         .requestMatchers("/", "/index.html", "/favicon.ico", "/assets/**").permitAll()
-                        .requestMatchers("/actuator/health/**", "/actuator/prometheus").permitAll()
+                        // EndpointRequest rather than string paths. Actuator endpoints are
+                        // served by their own handler mapping and can sit under a configurable
+                        // base path, so matching them by literal URL is fragile — which is how
+                        // /actuator/prometheus ended up behind authentication while
+                        // /actuator/health/** stayed reachable.
+                        .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
+                        .requestMatchers(EndpointRequest.to("prometheus")).permitAll()
+                        // Everything else the actuator exposes is operational detail.
+                        .requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ADMIN")
                         .requestMatchers("/docs/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
