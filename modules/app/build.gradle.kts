@@ -27,7 +27,10 @@ dependencies {
 
 tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("app.jar")
-    launchScript()
+    // No launchScript(). It prepends a shell stub so the jar can be executed directly, which
+    // makes the file no longer a plain zip — and `java -Djarmode=tools ... extract`, which the
+    // Dockerfile uses for layer extraction, rejects it outright. The container's entrypoint is
+    // `java -jar` regardless, so the stub buys nothing and cost an image build.
 }
 
 tasks.named<Jar>("jar") { enabled = false }
