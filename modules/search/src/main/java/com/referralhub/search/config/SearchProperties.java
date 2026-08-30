@@ -24,6 +24,14 @@ public class SearchProperties {
     /** Age at which a posting is worth half as much as an identical fresh one. */
     private Duration freshnessHalfLife = Duration.ofDays(14);
 
+    /**
+     * The largest fraction of its retrieval score a posting can lose to age.
+     *
+     * <p>See {@link com.referralhub.search.rank.FreshnessDecay#DEFAULT_MAX_PENALTY}: RRF scores
+     * are nearly flat, so an unbounded decay makes recency override relevance entirely.
+     */
+    private double freshnessMaxPenalty = 0.4;
+
     private Duration requestTimeout = Duration.ofSeconds(5);
 
     public String getOpensearchUri() {
@@ -88,6 +96,14 @@ public class SearchProperties {
 
     public void setFreshnessHalfLife(Duration freshnessHalfLife) {
         this.freshnessHalfLife = freshnessHalfLife;
+    }
+
+    public double getFreshnessMaxPenalty() {
+        return freshnessMaxPenalty;
+    }
+
+    public void setFreshnessMaxPenalty(double freshnessMaxPenalty) {
+        this.freshnessMaxPenalty = freshnessMaxPenalty;
     }
 
     public Duration getRequestTimeout() {

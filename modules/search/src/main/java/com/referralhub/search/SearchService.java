@@ -90,7 +90,8 @@ public class SearchService {
                 continue;
             }
             Instant postedAt = parseInstant(source.path("posted_at").asText(null));
-            double freshness = FreshnessDecay.multiplier(postedAt, now, properties.getFreshnessHalfLife());
+            double freshness = FreshnessDecay.boundedMultiplier(postedAt, now,
+                    properties.getFreshnessHalfLife(), properties.getFreshnessMaxPenalty());
 
             ranked.add(new SearchHit(
                     contribution.id(),

@@ -17,6 +17,23 @@ import java.time.Instant;
  */
 public final class FreshnessDecay {
 
+    /**
+     * How much of a document's score recency is allowed to take away, at most.
+     *
+     * <p>This bound is the whole point, and it exists because of how RRF scores are shaped.
+     * Reciprocal rank fusion deliberately produces a nearly flat distribution: at {@code k = 60}
+     * the gap between rank 1 and rank 2 is 1.6%. Multiplying that by a raw exponential decay,
+     * which spans the entire range from 1.0 down to 0, lets recency override relevance without
+     * limit — a six-month-old perfect match at rank 1 scores {@code 1/61 x 0.0026}, while a fresh
+     * and largely irrelevant one at rank 50 scores {@code 1/111 x 0.98} and wins by two hundred
+     * times.
+     *
+     * <p>With the bound, the worst a stale document can lose is this fraction of its retrieval
+     * score, which at {@code k = 60} corresponds to a bounded number of positions. Relevance
+     * still decides wide rank gaps; recency decides near-ties, which is what it is for.
+     */
+    public static final double DEFAULT_MAX_PENALTY = 0.4;
+
     private FreshnessDecay() {
     }
 
@@ -42,7 +59,24 @@ public final class FreshnessDecay {
         return Math.pow(0.5, halfLives);
     }
 
+    /**
+     * The bounded multiplier actually applied to a fused score.
+     *
+     * @param maxPenalty the largest fraction of the score recency may remove, in [0, 1]
+     * @return a multiplier in {@code [1 - maxPenalty, 1]}
+     */
+    public static double boundedMultiplier(Instant postedAt, Instant now, Duration halfLife,
+                                           double maxPenalty) {
+        double penalty = Math.min(Math.max(maxPenalty, 0.0), 1.0);
+        return 1.0 - penalty * (1.0 - multiplier(postedAt, now, halfLife));
+    }
+
     public static double apply(double fusedScore, Instant postedAt, Instant now, Duration halfLife) {
-        return fusedScore * multiplier(postedAt, now, halfLife);
+        return apply(fusedScore, postedAt, now, halfLife, DEFAULT_MAX_PENALTY);
+    }
+
+    public static double apply(double fusedScore, Instant postedAt, Instant now, Duration halfLife,
+                               double maxPenalty) {
+        return fusedScore * boundedMultiplier(postedAt, now, halfLife, maxPenalty);
     }
 }

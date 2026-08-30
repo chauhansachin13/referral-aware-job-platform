@@ -188,6 +188,34 @@ a default secret ships, nobody notices, and every deployment shares it.
 
 → [ADR 6](docs/adr/0006-application-side-resume-encryption.md)
 
+### A correction the tests forced
+
+Worth recording, because it is the kind of error that survives a green unit suite.
+
+Search originally applied an **unbounded** exponential freshness decay to the RRF-fused score.
+That is wrong, and wrong in a way that only a real index reveals.
+
+Reciprocal rank fusion produces a deliberately *flat* score distribution — discarding score
+magnitudes is the entire reason to use it. At the standard `k = 60`, rank 1 scores `1/61` and
+rank 2 scores `1/62`: a gap of **1.6%**. An exponential decay spans the whole range from 1.0 to
+0. Multiplying one by the other means the decay does not break ties, it *becomes* the ranking:
+
+| document | rank | age | fused | decay | product |
+|---|---:|---:|---:|---:|---:|
+| perfect match | 1 | 6 months | 0.01639 | 0.0026 | 0.0000426 |
+| poor match | 50 | today | 0.00901 | 0.98 | 0.00883 |
+
+The fresh, largely irrelevant result wins by more than two hundred times.
+
+The unit tests passed throughout, because they used hand-picked fused scores differing by 2x —
+a gap RRF never produces between neighbouring results. It took an integration test against a
+real OpenSearch to surface it, and the failure looked at first like a flaky assertion.
+
+The fix bounds how much recency may take:
+`multiplier = 1 - maxPenalty * (1 - 0.5^(age / halfLife))`, with `maxPenalty = 0.4`. Relevance
+decides wide rank gaps; recency decides near-ties, which is what it was always for.
+[ADR 8](docs/adr/0008-bounded-freshness-decay.md) records the alternatives.
+
 ---
 
 ## What is and is not implemented
@@ -200,8 +228,8 @@ Being precise about this, because a README that overstates is worse than one tha
   rate limiting, raw payload persistence, outbox emission.
 - Dedup: title canonicalization, MinHash + LSH banding, gated scoring, canonical job / job source
   model, precision-recall gate in CI.
-- Search: hybrid BM25 + kNN in one `_msearch`, RRF, freshness decay, cursor pagination, filters
-  applied to both legs.
+- Search: hybrid BM25 + kNN in one `_msearch`, RRF, bounded freshness decay, cursor pagination,
+  filters applied to both legs.
 - Referral: the full state machine with idempotent transitions, audit log, resume encryption and
   gated release, hard delete, expiry sweeper.
 - Trust: work-email OTP verification with lease expiry, seeker quotas, referrer capacity,
@@ -609,6 +637,7 @@ and everything above assumes a system that has it.
 | [5](docs/adr/0005-hand-written-opensearch-client.md) | Hand-written OpenSearch REST client |
 | [6](docs/adr/0006-application-side-resume-encryption.md) | Application-side resume encryption |
 | [7](docs/adr/0007-offline-embedding-model.md) | A deterministic offline embedding model |
+| [8](docs/adr/0008-bounded-freshness-decay.md) | Freshness decay is bounded, because RRF scores are flat |
 
 ---
 

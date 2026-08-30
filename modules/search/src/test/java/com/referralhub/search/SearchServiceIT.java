@@ -55,17 +55,24 @@ class SearchServiceIT {
         gateway.ensureIndex(MODEL.dimensions());
         searchService = new SearchService(gateway, MODEL, properties, new SimpleMeterRegistry());
 
+        // Every document except STALE_JOB is the same age, so each test varies exactly one
+        // thing. On a four-document corpus everything lands within a few ranks of everything
+        // else, and RRF gaps between adjacent ranks are 1.6% — small enough that an age
+        // difference would otherwise decide the relevance tests too, and they would be
+        // measuring the decay rather than the retrieval.
         Instant now = Instant.now();
+        Instant sameAge = now.minus(Duration.ofDays(1));
+
         index(K8S_JOB, "Site Reliability Engineer",
                 "You will own container orchestration and infrastructure as code for every team.",
-                "Berlin, Germany", false, "SENIOR", now.minus(Duration.ofDays(3)));
+                "Berlin, Germany", false, "SENIOR", sameAge);
         index(ONSITE_JOB, "Recruiting Coordinator",
                 "You will own interview scheduling and candidate experience with every team.",
-                "Berlin, Germany", false, "UNSPECIFIED", now.minus(Duration.ofDays(3)));
-        // Two jobs with identical text so relevance is equal and only age can separate them.
+                "Berlin, Germany", false, "UNSPECIFIED", sameAge);
+        // Identical text, so relevance is equal and only age can separate these two.
         index(FRESH_JOB, "Backend Engineer, Payments",
                 "You will own the double entry ledger and money movement APIs.",
-                "Remote", true, "MID", now.minus(Duration.ofDays(1)));
+                "Remote", true, "MID", sameAge);
         index(STALE_JOB, "Backend Engineer, Payments",
                 "You will own the double entry ledger and money movement APIs.",
                 "Remote", true, "MID", now.minus(Duration.ofDays(120)));

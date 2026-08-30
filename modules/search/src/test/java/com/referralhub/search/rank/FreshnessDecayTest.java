@@ -64,14 +64,51 @@ class FreshnessDecayTest {
     }
 
     @Test
-    @DisplayName("a much better old job can still outrank a mediocre new one")
-    void relevanceCanStillBeatRecency() {
-        // Freshness is a multiplier, not an override: a 3-day-old perfect match should not be
-        // buried by a same-day near miss.
-        double excellentAndWeekOld = FreshnessDecay.apply(
-                0.032, NOW.minus(Duration.ofDays(7)), NOW, HALF_LIFE);
-        double mediocreAndFresh = FreshnessDecay.apply(0.016, NOW, NOW, HALF_LIFE);
+    @DisplayName("the bounded multiplier never removes more than the configured fraction")
+    void boundedMultiplierRespectsItsCeiling() {
+        for (long days : new long[] {0, 1, 14, 90, 365, 3_650}) {
+            double bounded = FreshnessDecay.boundedMultiplier(
+                    NOW.minus(Duration.ofDays(days)), NOW, HALF_LIFE, 0.4);
 
-        assertThat(excellentAndWeekOld).isGreaterThan(mediocreAndFresh);
+            assertThat(bounded).isBetween(0.6, 1.0);
+        }
+    }
+
+    @Test
+    @DisplayName("a relevant but stale job is not buried by a fresh irrelevant one")
+    void recencyCannotOverrideRelevance() {
+        // The case that motivated the bound. RRF is deliberately flat: rank 1 scores 1/61 and
+        // rank 50 scores 1/111. With a raw decay the six-month-old rank-1 match scores
+        // 1/61 x 0.0026 and loses to the fresh rank-50 match by two hundred times.
+        double rankOne = 1.0 / 61;
+        double rankFifty = 1.0 / 111;
+
+        double staleButRelevant = FreshnessDecay.apply(
+                rankOne, NOW.minus(Duration.ofDays(180)), NOW, HALF_LIFE);
+        double freshButIrrelevant = FreshnessDecay.apply(rankFifty, NOW, NOW, HALF_LIFE);
+
+        assertThat(staleButRelevant).isGreaterThan(freshButIrrelevant);
+
+        // Without the bound it goes the other way, which is what the bound exists to prevent.
+        assertThat(rankOne * FreshnessDecay.multiplier(
+                NOW.minus(Duration.ofDays(180)), NOW, HALF_LIFE))
+                .isLessThan(rankFifty * FreshnessDecay.multiplier(NOW, NOW, HALF_LIFE));
+    }
+
+    @Test
+    @DisplayName("recency still decides between two adjacent, equally relevant results")
+    void recencyBreaksNearTies() {
+        // Adjacent RRF ranks differ by 1.6%; the bounded decay still has room to reorder them.
+        double fresh = FreshnessDecay.apply(1.0 / 61, NOW.minus(Duration.ofDays(1)), NOW, HALF_LIFE);
+        double stale = FreshnessDecay.apply(1.0 / 62, NOW.minus(Duration.ofDays(120)), NOW, HALF_LIFE);
+
+        assertThat(fresh).isGreaterThan(stale);
+    }
+
+    @Test
+    @DisplayName("a zero penalty disables the decay entirely")
+    void aZeroPenaltyIsANoOp() {
+        assertThat(FreshnessDecay.boundedMultiplier(
+                NOW.minus(Duration.ofDays(3_650)), NOW, HALF_LIFE, 0.0)).isEqualTo(1.0);
     }
 }

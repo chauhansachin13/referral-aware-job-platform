@@ -93,6 +93,18 @@ class RankingProperties {
     }
 
     @Property(tries = 500)
+    void theBoundedMultiplierNeverExceedsItsCeiling(
+            @ForAll @LongRange(min = -365, max = 3_650) long ageDays,
+            @ForAll @IntRange(min = 1, max = 365) int halfLifeDays,
+            @ForAll @net.jqwik.api.constraints.DoubleRange(min = 0, max = 1) double maxPenalty) {
+
+        double bounded = FreshnessDecay.boundedMultiplier(NOW.minus(Duration.ofDays(ageDays)), NOW,
+                Duration.ofDays(halfLifeDays), maxPenalty);
+
+        assertThat(bounded).isBetween(1.0 - maxPenalty - 1e-9, 1.0 + 1e-9);
+    }
+
+    @Property(tries = 500)
     void olderIsNeverWorthMore(@ForAll @LongRange(min = 0, max = 3_650) long ageDays) {
         Duration halfLife = Duration.ofDays(14);
 
