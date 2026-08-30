@@ -14,6 +14,7 @@ dependencies {
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":common")))
+    testImplementation(libs.spring.security.test)
 }
 
 /**

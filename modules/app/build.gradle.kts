@@ -20,6 +20,7 @@ dependencies {
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":common")))
+    testImplementation(libs.spring.security.test)
     // Architecture rules live here because app is the only module whose classpath contains
     // all six feature modules at once, which is what makes the boundary rules checkable.
     testImplementation(libs.archunit)

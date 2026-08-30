@@ -49,6 +49,8 @@ import org.springframework.test.context.DynamicPropertySource;
                 + "classpath:db/migration/dedup,classpath:db/migration/referral,"
                 + "classpath:db/migration/trust",
         "spring.kafka.bootstrap-servers=localhost:1",
+                // AuthConfig refuses to build a signing key without one, by design.
+                "referralhub.auth.jwt-secret=integration-test-signing-secret-at-least-32-bytes-long",
         "referralhub.storage.access-key=test",
         "referralhub.storage.secret-key=testtest",
         "referralhub.storage.url-signing-secret=integration-test-signing-secret"

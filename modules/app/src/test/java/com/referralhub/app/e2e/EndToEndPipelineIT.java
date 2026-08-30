@@ -90,6 +90,8 @@ import org.springframework.test.context.DynamicPropertySource;
                 "referralhub.dedup.consumer-enabled=false",
                 "referralhub.referral.expiry-enabled=false",
                 "spring.kafka.bootstrap-servers=localhost:1",
+                // AuthConfig refuses to build a signing key without one, by design.
+                "referralhub.auth.jwt-secret=integration-test-signing-secret-at-least-32-bytes-long",
                 "referralhub.search.index-name=jobs_e2e",
                 "referralhub.storage.bucket=referralhub-e2e"
         })

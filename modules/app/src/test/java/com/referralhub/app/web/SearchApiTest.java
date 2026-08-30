@@ -3,7 +3,9 @@ package com.referralhub.app.web;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,7 +22,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.referralhub.app.SecurityConfig;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,7 +38,14 @@ import org.springframework.test.web.servlet.MockMvc;
  * documents is settled by {@code SearchServiceIT} against a real cluster.
  */
 @WebMvcTest(controllers = SearchController.class)
+@Import(SecurityConfig.class)
 class SearchApiTest {
+
+    // The real filter chain is imported rather than stubbed out, so these tests check the
+    // authorization rules that actually ship. The resource server needs a decoder bean even
+    // when every route under test is public.
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
 
     @Autowired
     private MockMvc mvc;
@@ -116,6 +129,34 @@ class SearchApiTest {
                 .andExpect(jsonPath("$.code").value("bad_request"))
                 .andExpect(jsonPath("$.message").value("Malformed cursor"))
                 .andExpect(jsonPath("$.timestamp").exists());
+    }
+
+    @Test
+    @DisplayName("search needs no account: it is the product's front door")
+    void searchIsPublic() throws Exception {
+        when(searchService.search(any())).thenReturn(oneHit());
+
+        mvc.perform(get("/api/v1/search").param("q", "engineer"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("reindexing is administrator-only, even though searching is not")
+    void reindexRequiresAdmin() throws Exception {
+        UUID job = UUID.randomUUID();
+
+        mvc.perform(post("/api/v1/search/index/" + job))
+                .andExpect(status().isUnauthorized());
+
+        mvc.perform(post("/api/v1/search/index/" + job)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
+                .andExpect(status().isForbidden());
+
+        mvc.perform(post("/api/v1/search/index/" + job)
+                        .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"))))
+                .andExpect(status().isOk());
+
+        verify(indexer).index(job);
     }
 
     @Test

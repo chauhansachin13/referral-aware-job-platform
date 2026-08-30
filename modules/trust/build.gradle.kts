@@ -9,10 +9,14 @@ dependencies {
     // is where companies are first discovered. Trust reads it; it does not crawl anything.
     api(project(":ingestion"))
     implementation(libs.spring.boot.starter.web)
+    // Trust owns identity, so it owns password hashing and token issuing too.
+    api(libs.spring.boot.starter.security)
+    api(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.spring.boot.starter.data.redis)
     runtimeOnly(libs.postgresql)
 
     testImplementation(testFixtures(project(":common")))
+    testImplementation(libs.spring.security.test)
 }
 
 /**

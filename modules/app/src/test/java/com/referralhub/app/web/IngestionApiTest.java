@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -21,13 +23,31 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.referralhub.app.SecurityConfig;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(controllers = IngestionController.class)
+@Import(SecurityConfig.class)
 class IngestionApiTest {
+
+    @MockitoBean
+    private JwtDecoder jwtDecoder;
+
+    /** Registering a board spends someone else's crawl budget, so it is administrator-only. */
+    private static RequestPostProcessor admin() {
+        return jwt().authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+    }
+
+    private static RequestPostProcessor user() {
+        return jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+    }
 
     private static final UUID COMPANY = UUID.fromString("00000000-0000-0000-0000-0000000000c0");
     private static final UUID BOARD = UUID.fromString("00000000-0000-0000-0000-0000000000b0");
@@ -52,11 +72,43 @@ class IngestionApiTest {
     }
 
     @Test
+    @DisplayName("board registration is administrator-only; an ordinary account is refused")
+    void registrationIsAdminOnly() throws Exception {
+        String body = """
+                {"companyName":"Acme","companySlug":"acme","source":"greenhouse",
+                 "boardToken":"acme"}""";
+
+        mvc.perform(post("/api/v1/ingestion/boards")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnauthorized());
+
+        mvc.perform(post("/api/v1/ingestion/boards").with(user())
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+
+        verify(boards, never()).upsertCompany(anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("reading crawl state needs an account, because it names the companies we track")
+    void readingQueueNeedsAnAccount() throws Exception {
+        when(queue.size()).thenReturn(7L);
+
+        mvc.perform(get("/api/v1/ingestion/queue")).andExpect(status().isUnauthorized());
+
+        mvc.perform(get("/api/v1/ingestion/queue").with(user()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scheduledBoards").value(7));
+    }
+
+    @Test
     @DisplayName("registering a board returns 201 and queues it immediately")
     void registersAndQueues() throws Exception {
         stubRegistration();
 
         mvc.perform(post("/api/v1/ingestion/boards")
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"companyName":"Acme","companySlug":"acme","source":"greenhouse",
@@ -73,6 +125,7 @@ class IngestionApiTest {
     @DisplayName("an unsupported ATS is refused before anything is written")
     void rejectsUnsupportedSource() throws Exception {
         mvc.perform(post("/api/v1/ingestion/boards")
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"companyName":"Acme","companySlug":"acme","source":"linkedin",
@@ -89,6 +142,7 @@ class IngestionApiTest {
     @DisplayName("a slug that is not a slug is refused, with the field named")
     void rejectsBadSlug() throws Exception {
         mvc.perform(post("/api/v1/ingestion/boards")
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"companyName":"Acme","companySlug":"Acme Corp!",
@@ -102,6 +156,7 @@ class IngestionApiTest {
     @DisplayName("missing required fields are all reported at once, not one per round trip")
     void reportsAllValidationFailures() throws Exception {
         mvc.perform(post("/api/v1/ingestion/boards")
+                        .with(admin())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
@@ -116,7 +171,7 @@ class IngestionApiTest {
         when(pipeline.crawl(missing))
                 .thenThrow(new com.referralhub.common.error.NotFoundException("Board", missing));
 
-        mvc.perform(post("/api/v1/ingestion/boards/" + missing + "/crawl"))
+        mvc.perform(post("/api/v1/ingestion/boards/" + missing + "/crawl").with(admin()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("not_found"));
     }

@@ -108,6 +108,7 @@ run: deps ## Run the app on the host against containerised dependencies
 secrets: ## Print a fresh pair of secrets for .env
 	@echo "REFERRALHUB_STORAGE_ENCRYPTIONKEY=$$(openssl rand -base64 32)"
 	@echo "REFERRALHUB_STORAGE_URLSIGNINGSECRET=$$(openssl rand -hex 32)"
+	@echo "REFERRALHUB_AUTH_JWTSECRET=$$(openssl rand -base64 48)"
 
 .PHONY: seed
 seed: ## Register a few real public ATS boards with the crawler

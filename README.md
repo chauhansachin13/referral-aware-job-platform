@@ -188,6 +188,35 @@ a default secret ships, nobody notices, and every deployment shares it.
 
 → [ADR 6](docs/adr/0006-application-side-resume-encryption.md)
 
+### Authentication
+
+Added last, and the README said so for most of this project's life: every endpoint used to take
+the acting user's id as a parameter and believe it. Any caller could accept somebody else's
+referral, or mint a resume link for a request that was not theirs.
+
+Three tiers, and each boundary has a reason:
+
+| tier | routes | why |
+|---|---|---|
+| public | search, console, health, metrics, docs, register, login | job search is the front door; an account to read public postings would be worse than pointless |
+| authenticated | referrals, employee verification, standing | anything acting *for* a person |
+| administrator | ATS board registration, forced crawls, reindexing | these spend somebody else's infrastructure budget |
+
+The load-bearing detail is that **no endpoint accepts an actor id any more**. Passing one would
+be an invitation to trust it, so `CurrentUser` reads the subject from the verified token and the
+request body has nowhere to put an identity. A test asserts exactly this: a create request whose
+body names a different user is accepted, and the referral is created for the token's owner.
+
+Passwords are BCrypt at strength 12, and login hashes a dummy value when the account does not
+exist so response time does not reveal which addresses are registered. Tokens are HS256, signed
+with a secret that has no default — like the two resume secrets, the application refuses to start
+without it, because a shipped signing key lets anyone mint a token for any account on every
+deployment that forgot to override it.
+
+Writing the tests surfaced one defect immediately: a wrong password returned **500**, because
+`BadCredentialsException` fell through to the catch-all handler. A failed login answering
+"Something went wrong" is not just wrong, it reads as an outage.
+
 ### A correction the tests forced
 
 Worth recording, because it is the kind of error that survives a green unit suite.
@@ -234,6 +263,8 @@ Being precise about this, because a README that overstates is worse than one tha
   gated release, hard delete, expiry sweeper.
 - Trust: work-email OTP verification with lease expiry, seeker quotas, referrer capacity,
   Wilson-bound reputation.
+- Authentication: BCrypt passwords, self-issued HS256 bearer tokens, three authorization tiers,
+  and an acting identity that always comes from the token rather than the request body.
 - Matcher: capacity-respecting, fairness-weighted assignment as a pure function.
 - Infrastructure: transactional outbox with SKIP LOCKED relay, idempotent consumers, DLQ,
   Flyway migrations namespaced per module, Prometheus metrics, Docker Compose, multi-stage
@@ -251,9 +282,15 @@ Being precise about this, because a README that overstates is worse than one tha
   claim about production accuracy. Every negative pair shares company boilerplate and several
   share a title, level or location, so the set is adversarial rather than easy — but it can be
   overfitted, and 24 pairs is 24 pairs.
-- **No authentication.** Every endpoint takes actor ids as parameters. Adding OAuth2 resource
-  server config is a well-understood afternoon; leaving it out keeps the demo runnable. It does
-  mean this is not deployable as-is.
+- **Tokens are symmetric and self-issued.** One process issues and verifies them, so an
+  asymmetric key pair would buy nothing but key distribution. Federating with a real identity
+  provider means replacing `AuthConfig`'s decoder and nothing else.
+- **Authorization is coarse.** Three tiers — public, authenticated, administrator — plus
+  ownership checks inside handlers. There is no per-company delegation, so an administrator is an
+  administrator everywhere.
+- **A role change waits for the token to expire.** Roles ride in the token so an authorization
+  decision needs no database read; the cost is up to 12 hours of staleness. That is the reason
+  the TTL is hours rather than weeks, and a revocation list is the obvious next step.
 - **Notifications are events, not emails.** The platform emits `NotificationRequested` through the
   outbox; no SMTP client exists. The verification code is therefore visible only in the event
   payload.
@@ -382,28 +419,28 @@ Six kinds of test, each answering a question the others cannot.
 
 | kind | count | needs Docker |
 |---|---:|---|
-| Unit | 290 | no |
-| Property-based (jqwik) | 45 | no |
-| HTTP contract (MockMvc) | 28 | no |
+| Unit | 293 | no |
+| Property-based (jqwik) | 46 | no |
+| HTTP contract (MockMvc) | 43 | no |
 | Architecture (ArchUnit) | 18 | no |
 | Integration and end-to-end (Testcontainers) | 45 | yes |
-| **Total** | **426** | |
+| **Total** | **445** | |
 
 | module | tests | passed | skipped | failed |
 |---|---:|---:|---:|---:|
-| app | 53 | 46 | 7 | 0 |
+| app | 68 | 61 | 7 | 0 |
 | common | 35 | 25 | 10 | 0 |
 | dedup | 105 | 105 | 0 | 0 |
 | ingestion | 45 | 34 | 11 | 0 |
 | referral | 108 | 97 | 11 | 0 |
-| search | 48 | 42 | 6 | 0 |
+| search | 52 | 46 | 6 | 0 |
 | trust | 32 | 32 | 0 | 0 |
-| **TOTAL** | **426** | **381** | **45** | **0** |
+| **TOTAL** | **445** | **400** | **45** | **0** |
 
 The 45 skipped are the Docker-gated ones; on this machine no daemon is available, so they are
 verified in CI. Everything else runs everywhere.
 
-### Unit — 290
+### Unit — 293
 
 Example-based tests over pure logic: the adaptive scheduler, the title normalizer, MinHash and
 LSH banding, reciprocal rank fusion, freshness decay, the Wilson bound, the scoring gates.
@@ -415,7 +452,7 @@ the JDK's own server to prove a 304 transfers no body, and `ConceptEmbeddingTest
 zero-token-overlap claim at the vector-space level so it is verified on every build rather than
 only where Docker exists.
 
-### Property-based (jqwik) — 45
+### Property-based (jqwik) — 46
 
 Invariants over generated inputs. These catch the input shapes nobody thinks to write a test for:
 
@@ -445,16 +482,22 @@ every `DomainEvent` is a record; there is no field injection; and **no feature m
 `KafkaTemplate` directly**, which is what keeps the transactional outbox from being quietly
 bypassed.
 
-### HTTP contract (MockMvc) — 28
+### HTTP contract (MockMvc) — 43
 
 The wire contract: status codes, the single `ApiError` shape, validation messages, header
 handling. These proved that an unsupported ATS is rejected before anything is written, that
 `Retry-After` is populated on a 429, that a resume download is `no-store` and an attachment, and
 that an internal failure returns `Something went wrong` rather than a connection string.
 
-One found a real bug: `@Min`/`@Max` on the search endpoint were **dead**, because the controller
-lacked `@Validated`. An oversized page was silently clamped instead of refused. A validation
-annotation that does nothing is worse than none — it reads like protection.
+These found two real bugs. `@Min`/`@Max` on the search endpoint were **dead**, because the
+controller lacked `@Validated` — an oversized page was silently clamped instead of refused, and a
+validation annotation that does nothing is worse than none because it reads like protection. And
+a wrong password returned **500**, because `BadCredentialsException` fell through to the catch-all
+handler.
+
+They also carry the authorization rules. The real `SecurityConfig` is imported rather than stubbed
+away: a web-slice test that disables security proves the handler works for a caller who was never
+checked, which is precisely the property that was wrong before authentication existed.
 
 ### Integration and end-to-end (Testcontainers) — 45
 
@@ -621,8 +664,12 @@ events for state that never existed. And the modules stay compile-time separated
 become a service, the events it consumes and produces are already on Kafka and its tables are
 already disjoint, so it is a deployment change rather than a rewrite.
 
-The thing I would fix first, before any of this, is the honest gap: **there is no authentication**,
-and everything above assumes a system that has it.
+The thing I would fix first, before any of this, is **token revocation**. Roles and identity ride
+in a self-signed token so that authorizing a request costs no database read, which is the right
+trade at this size — but it means removing someone's access takes effect only when their token
+expires. At a 12 hour TTL that is a real window. A short-lived access token with a refresh token
+checked against a revocation list is the standard answer, and it is the first thing that should
+change if this ever held real accounts.
 
 ---
 

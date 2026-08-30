@@ -92,6 +92,9 @@
            border: 1px solid var(--good); }
   footer { color: var(--muted); font-size: 12.5px; text-align: center; padding: 0 20px 40px; }
   a { color: var(--accent); }
+  dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--panel);
+           color: var(--text); padding: 20px; max-width: 380px; }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
 </style>
 </head>
 <body>
@@ -100,8 +103,32 @@
   <h1>ReferralHub</h1>
   <span class="sub">operator console</span>
   <span class="spacer"></span>
+  <span id="whoami" class="sub"></span>
+  <button class="go ghost" id="auth-toggle" type="button">Sign in</button>
   <span id="health"><span class="dot"></span><span id="health-text">checking…</span></span>
 </header>
+
+<dialog id="auth-dialog">
+  <form method="dialog" id="auth-form">
+    <h2 style="margin-top:0">Sign in</h2>
+    <p class="hint">
+      Search is public. Everything that acts for a person — requesting a referral, answering one,
+      verifying employment — needs an account.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label>Email<input id="auth-email" type="email" autocomplete="username" required></label>
+      <label>Password<input id="auth-password" type="password"
+        autocomplete="current-password" minlength="12" required></label>
+      <label id="auth-name-row" hidden>Display name<input id="auth-name" autocomplete="name"></label>
+      <div id="auth-status" class="hint"></div>
+      <div class="row" style="margin:0">
+        <button class="go" id="auth-submit" value="default">Sign in</button>
+        <button class="go ghost" id="auth-switch" type="button">Create an account instead</button>
+        <button class="go ghost" id="auth-cancel" type="button" value="cancel">Cancel</button>
+      </div>
+    </div>
+  </form>
+</dialog>
 
 <nav role="tablist">
   <button role="tab" aria-selected="true" data-tab="search">Search</button>
@@ -147,12 +174,11 @@
     <p class="hint">
       REQUESTED → ACCEPTED → SUBMITTED → CLOSED, with DECLINED and EXPIRED exits. Illegal moves
       are rejected by the domain layer, not by this page. Every action sends an
-      <code>Idempotency-Key</code>, so pressing a button twice is a no-op.
+      <code>Idempotency-Key</code>, so pressing a button twice is a no-op, and the acting
+      identity comes from your token rather than from anything this page sends.
     </p>
     <div class="row">
-      <label>Seeker id<input id="seeker-id" class="mono" placeholder="uuid" size="36"></label>
-      <button class="go ghost" id="load-referrals">Load requests</button>
-      <button class="go ghost" id="make-user">Create a test user</button>
+      <button class="go ghost" id="load-referrals">Load my requests</button>
     </div>
     <div id="referral-status" class="hint"></div>
     <div id="referral-list"></div>
@@ -163,7 +189,8 @@
     <h2>Ingestion</h2>
     <p class="hint">
       Only public ATS board APIs: Greenhouse, Lever and Ashby. Registering a board queues it for
-      an immediate crawl; the adaptive scheduler takes over from there.
+      an immediate crawl; the adaptive scheduler takes over from there. Registration is
+      administrator-only, because a crawl spends somebody else's infrastructure budget.
     </p>
     <form class="row" id="board-form">
       <label>Company<input id="b-name" value="Stripe"></label>
@@ -209,14 +236,32 @@
   const idem = () => (crypto.randomUUID ? crypto.randomUUID()
     : String(Date.now()) + Math.random().toString(16).slice(2));
 
+  // Kept in memory and mirrored to localStorage so a reload does not sign you out. A bearer
+  // token in a header is not ambient the way a cookie is, so there is no CSRF exposure here.
+  const TOKEN_KEY = "referralhub.token";
+  let token = null;
+  try { token = localStorage.getItem(TOKEN_KEY); } catch { token = null; }
+
+  function setToken(value) {
+    token = value;
+    try {
+      if (value) localStorage.setItem(TOKEN_KEY, value);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch { /* private browsing; the in-memory copy still works for this tab */ }
+  }
+
   async function api(path, options = {}) {
-    const response = await fetch(path, {
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-      ...options,
-    });
+    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+    if (token) headers.Authorization = "Bearer " + token;
+    const response = await fetch(path, { ...options, headers });
     const text = await response.text();
     let body = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+    if (response.status === 401 && token) {
+      // The token expired or was signed with a key this deployment no longer uses.
+      setToken(null);
+      refreshIdentity();
+    }
     if (!response.ok) {
       const message = body && body.message ? body.message : (text || response.statusText);
       throw new Error(`${response.status} — ${message}`);
@@ -238,6 +283,82 @@
       if (button.dataset.tab === "boards") loadBoards();
       if (button.dataset.tab === "dedup") loadBanding();
     });
+  });
+
+  // ---------------------------------------------------------------------- auth
+  let identity = null;
+  let authMode = "login";
+
+  async function refreshIdentity() {
+    const label = $("whoami"), toggle = $("auth-toggle");
+    if (!token) {
+      identity = null;
+      label.textContent = "";
+      toggle.textContent = "Sign in";
+      return;
+    }
+    try {
+      identity = await api("/api/v1/auth/me");
+      label.textContent = identity.email + (identity.roles.includes("ADMIN") ? " (admin)" : "");
+      toggle.textContent = "Sign out";
+    } catch {
+      identity = null;
+      label.textContent = "";
+      toggle.textContent = "Sign in";
+    }
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    const registering = mode === "register";
+    $("auth-dialog").querySelector("h2").textContent =
+      registering ? "Create an account" : "Sign in";
+    $("auth-submit").textContent = registering ? "Create account" : "Sign in";
+    $("auth-switch").textContent =
+      registering ? "I already have an account" : "Create an account instead";
+    $("auth-name-row").hidden = !registering;
+    $("auth-password").setAttribute("autocomplete",
+      registering ? "new-password" : "current-password");
+    show($("auth-status"), "");
+  }
+
+  $("auth-toggle").addEventListener("click", () => {
+    if (token) {
+      setToken(null);
+      refreshIdentity();
+      return;
+    }
+    setAuthMode("login");
+    $("auth-dialog").showModal();
+  });
+
+  $("auth-switch").addEventListener("click",
+    () => setAuthMode(authMode === "login" ? "register" : "login"));
+  $("auth-cancel").addEventListener("click", () => $("auth-dialog").close());
+
+  $("auth-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const status = $("auth-status");
+    const email = $("auth-email").value.trim();
+    const password = $("auth-password").value;
+    try {
+      if (authMode === "register") {
+        await api("/api/v1/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            displayName: $("auth-name").value.trim() || email,
+            email, password,
+          }),
+        });
+      }
+      const issued = await api("/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      setToken(issued.accessToken);
+      await refreshIdentity();
+      $("auth-dialog").close();
+    } catch (e) { show(status, e.message, true); }
   });
 
   // -------------------------------------------------------------------- health
@@ -343,11 +464,11 @@
 
   async function loadReferrals() {
     const status = $("referral-status"), list = $("referral-list");
-    const seeker = $("seeker-id").value.trim();
-    if (!seeker) return show(status, "Enter a seeker id, or create a test user.", true);
+    if (!token) return show(status, "Sign in to see your referral requests.", true);
     show(status, "loading…");
     try {
-      const requests = await api(`/api/v1/referrals/seekers/${encodeURIComponent(seeker)}`);
+      // There is no endpoint for reading somebody else's requests; this one is always yours.
+      const requests = await api("/api/v1/referrals/mine");
       list.innerHTML = requests.map(renderReferral).join("")
         || `<div class="empty">This seeker has no referral requests yet.</div>`;
       show(status, `${requests.length} request(s)`);
@@ -358,21 +479,6 @@
   }
 
   $("load-referrals").addEventListener("click", loadReferrals);
-
-  $("make-user").addEventListener("click", async () => {
-    const status = $("referral-status");
-    try {
-      const user = await api("/api/v1/trust/users", {
-        method: "POST",
-        body: JSON.stringify({
-          displayName: "Console user",
-          email: `console-${Date.now()}@example.com`,
-        }),
-      });
-      $("seeker-id").value = user.id;
-      show(status, "Created user " + user.id);
-    } catch (e) { show(status, e.message, true); }
-  });
 
   $("referral-list").addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-op]");
@@ -391,12 +497,11 @@
         )}</pre>`;
         return;
       }
-      const actorId = prompt(`Acting user id for "${op}"`, $("seeker-id").value.trim());
-      if (!actorId) return;
+      // No actor is sent: the server reads it from the bearer token and ignores anything else.
       await api(`/api/v1/referrals/${id}/${op}`, {
         method: "POST",
         headers: { "Idempotency-Key": idem() },
-        body: JSON.stringify({ actorId, reason: null }),
+        body: JSON.stringify({ reason: null }),
       });
       show(status, `${op} applied`);
       loadReferrals();
@@ -489,6 +594,7 @@
     }
   }
 
+  refreshIdentity();
   runSearch(false);
 })();
 </script>

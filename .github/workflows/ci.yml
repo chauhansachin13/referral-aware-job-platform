@@ -134,6 +134,10 @@ jobs:
         run: docker compose up -d --build --wait --wait-timeout 600
 
       - name: Smoke test
+        env:
+          # Must match the bootstrap credentials docker-compose.yml gives the app.
+          BOOTSTRAP_ADMIN_EMAIL: admin@referralhub.local
+          BOOTSTRAP_ADMIN_PASSWORD: change-me-in-any-real-deployment
         run: ./scripts/smoke-test.sh
 
       - name: Dump logs on failure

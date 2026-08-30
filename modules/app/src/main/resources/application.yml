@@ -1,9 +1,9 @@
 # Every value here is environment-overridable. The defaults are the docker-compose topology,
 # so `docker compose up -d && ./gradlew bootRun` works with no configuration at all.
 #
-# The two secrets — referralhub.storage.encryption-key and url-signing-secret — deliberately
-# have NO default. The application refuses to start without them rather than shipping a
-# placeholder key that every deployment would share.
+# Three secrets — referralhub.storage.encryption-key, storage.url-signing-secret and
+# auth.jwt-secret — deliberately have NO default. The application refuses to start without them
+# rather than shipping placeholder keys that every deployment would share.
 
 spring:
   application:
@@ -115,6 +115,16 @@ referralhub:
     indexer-enabled: ${SEARCH_INDEXER_ENABLED:true}
     candidate-depth: 200
     freshness-half-life: 14d
+
+  auth:
+    # No default. A shipped signing key lets anyone mint a token for any account on every
+    # deployment that forgot to override it.
+    jwt-secret: ${REFERRALHUB_AUTH_JWTSECRET:}
+    token-ttl: 12h
+    issuer: referralhub
+    # Both must be set for the bootstrap to run, and it only runs when no administrator exists.
+    bootstrap-admin-email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    bootstrap-admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:}
 
   trust:
     verification-validity: 90d

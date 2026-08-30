@@ -137,6 +137,11 @@ services:
       # Development values. Generate real ones with `make secrets`.
       REFERRALHUB_STORAGE_ENCRYPTIONKEY: ZGV2LW9ubHkta2V5LWRvLW5vdC11c2UtaW4tcHJvZCE=
       REFERRALHUB_STORAGE_URLSIGNINGSECRET: dev-only-signing-secret-do-not-use-in-prod
+      REFERRALHUB_AUTH_JWTSECRET: dev-only-jwt-signing-secret-do-not-use-in-production-32b
+      # Creates the first administrator so a fresh stack can register an ATS board. Only runs
+      # when no administrator exists yet.
+      BOOTSTRAP_ADMIN_EMAIL: admin@referralhub.local
+      BOOTSTRAP_ADMIN_PASSWORD: change-me-in-any-real-deployment
       JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
     ports:
       - "8080:8080"
