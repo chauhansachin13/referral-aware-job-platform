@@ -217,6 +217,42 @@ Writing the tests surfaced one defect immediately: a wrong password returned **5
 `BadCredentialsException` fell through to the catch-all handler. A failed login answering
 "Something went wrong" is not just wrong, it reads as an outage.
 
+### What running it against a real board changed
+
+The whole platform had a green pipeline before it had ever crawled anything real. Pointing it at
+Stripe's public Greenhouse board — 575 live postings — found five things that neither the unit
+tests nor the synthetic fixtures could.
+
+**Seniority was being read off the role noun.** 29 product managers came back as `MANAGER`, 24
+solutions architects as `PRINCIPAL`, 8 technical programme managers as `MANAGER`. The level rules
+matched a bare `manager` and `architect`, so an individual contributor whose job title happens to
+contain "manager" landed on the management ladder — where `levelGate` returns 0 and stops two
+postings for the same role from ever merging. Seniority now has to come from a seniority word.
+No synthetic fixture caught it because I had never written a fixture titled "Product Manager".
+
+**The first crawl invented a posting rate.** A board's opening crawl reports its entire back
+catalogue as changed, and there is no elapsed window to divide by, so 575 postings became an
+estimated 4,140 postings per day and pinned the interval to its floor. A backlog is not a rate;
+the first crawl no longer updates one.
+
+**Then the fix over-corrected.** With no measured rate, the cadence jumped from the registered
+one hour straight to the twelve hour ceiling after a single unchanged crawl — an order of
+magnitude on one observation, which defeats the point of a backoff factor. Adaptation is now
+damped to at most a factor of two per crawl, so the interval walks 60 → 120 → 240 → 480 minutes
+as evidence accumulates.
+
+**An unreachable dependency was a 500.** With OpenSearch not running, search answered "Something
+went wrong". A 500 says this service has a bug; a 503 says a dependency is down and the request
+is worth retrying. They send a caller, and whoever is on call, to different places.
+
+**A refusal named the wrong reason.** Submitting a referral nobody had accepted reported that it
+had been "accepted by someone else" — a correct refusal citing a race that never happened.
+
+What *did* hold up: the conditional fetch. Against the real board, crawl one was HTTP 200 with
+575 postings in 701 ms; crawls two and three were **HTTP 304** with no body, no parse and no
+writes. Deduplication collapsed 19 of 575 postings, and every merge was a genuine one — the same
+requisition posted for several cities.
+
 ### A correction the tests forced
 
 Worth recording, because it is the kind of error that survives a green unit suite.

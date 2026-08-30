@@ -49,8 +49,16 @@ public final class TitleNormalizer {
         // --- Level -----------------------------------------------------------------------
         put(LEVEL_RULES, "\\b(vp|vice president|svp|evp)\\b", SeniorityLevel.VP);
         put(LEVEL_RULES, "\\b(director|head of)\\b", SeniorityLevel.DIRECTOR);
-        put(LEVEL_RULES, "\\b(engineering manager|em|people manager|manager)\\b", SeniorityLevel.MANAGER);
-        put(LEVEL_RULES, "\\b(distinguished|fellow|principal|architect)\\b", SeniorityLevel.PRINCIPAL);
+        // Only phrases that unambiguously name the management ladder. A bare "manager" used to
+        // be here, which put every Product Manager, Technical Program Manager and Customer
+        // Success Manager on the management ladder — they are individual contributors whose role
+        // noun happens to be "manager". Found by running the crawler against a real board: 29
+        // product managers and 8 programme managers came back classified as MANAGER.
+        put(LEVEL_RULES, "\\b(engineering manager|people manager|line manager)\\b",
+                SeniorityLevel.MANAGER);
+        // "architect" was here too, which made every Solutions Architect a principal-level IC.
+        // Seniority has to come from a seniority word, not from the role noun.
+        put(LEVEL_RULES, "\\b(distinguished|fellow|principal)\\b", SeniorityLevel.PRINCIPAL);
         put(LEVEL_RULES, "\\bsenior (member of technical staff|mts)\\b", SeniorityLevel.SENIOR);
         put(LEVEL_RULES, "\\bsmts\\b", SeniorityLevel.SENIOR);
         // Must precede the bare "staff" rule: that rule matches the word inside "member of

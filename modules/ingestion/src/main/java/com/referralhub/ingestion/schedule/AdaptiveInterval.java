@@ -24,8 +24,29 @@ public final class AdaptiveInterval {
      * @param postingsPerDay smoothed observation of how fast this board changes
      * @param consecutiveUnchanged how many crawls in a row produced no semantic change
      */
+    /**
+     * Bounds how far one crawl may move the cadence.
+     *
+     * <p>Without it a single observation can move the interval by an order of magnitude, because
+     * the base is recomputed from the rate rather than adjusted from the current interval. A
+     * board registered at one hour jumped straight to the twelve hour ceiling after one
+     * unchanged crawl — driven entirely by the default rate prior, not by anything observed.
+     * That defeats the point of a backoff factor, which is that the cadence moves gradually as
+     * evidence accumulates.
+     */
+    private static final double MAX_ADJUSTMENT_PER_CRAWL = 2.0;
+
+    /** Interval for a board with no previous interval to move from. */
     public static Duration next(double postingsPerDay, int consecutiveUnchanged,
                                 IngestionProperties.Crawl config) {
+        return next(postingsPerDay, consecutiveUnchanged, config, null);
+    }
+
+    /**
+     * @param current the board's present interval, damped against; null on the first computation
+     */
+    public static Duration next(double postingsPerDay, int consecutiveUnchanged,
+                                IngestionProperties.Crawl config, Duration current) {
         Duration min = config.getMinInterval();
         Duration max = config.getMaxInterval();
 
@@ -43,6 +64,12 @@ public final class AdaptiveInterval {
         Duration backedOff = Duration.ofMillis((long) Math.min(
                 base.toMillis() * multiplier, (double) max.toMillis()));
 
+        if (current != null && !current.isZero() && !current.isNegative()) {
+            long floor = (long) (current.toMillis() / MAX_ADJUSTMENT_PER_CRAWL);
+            long ceiling = (long) (current.toMillis() * MAX_ADJUSTMENT_PER_CRAWL);
+            backedOff = Duration.ofMillis(
+                    Math.max(floor, Math.min(ceiling, backedOff.toMillis())));
+        }
         return clamp(backedOff, min, max);
     }
 

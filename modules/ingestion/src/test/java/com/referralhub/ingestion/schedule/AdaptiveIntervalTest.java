@@ -69,6 +69,40 @@ class AdaptiveIntervalTest {
     }
 
     @Test
+    @DisplayName("one crawl cannot move the cadence by more than a factor of two")
+    void adaptationIsDamped() {
+        Duration current = Duration.ofHours(1);
+
+        // A board with the default rate prior would otherwise jump straight to the 12h ceiling
+        // on its first unchanged crawl, which is a 12x move on a single observation.
+        Duration afterQuietCrawl = AdaptiveInterval.next(1.0, 1, config, current);
+        assertThat(afterQuietCrawl).isEqualTo(Duration.ofHours(2));
+
+        // And the same bound applies in the other direction.
+        Duration afterBusyCrawl = AdaptiveInterval.next(10_000.0, 0, config, current);
+        assertThat(afterBusyCrawl).isEqualTo(Duration.ofMinutes(30));
+    }
+
+    @Test
+    @DisplayName("repeated quiet crawls still reach the ceiling, just not in one step")
+    void dampingDelaysButDoesNotPrevent() {
+        Duration interval = Duration.ofHours(1);
+        for (int crawl = 1; crawl <= 10; crawl++) {
+            interval = AdaptiveInterval.next(1.0, crawl, config, interval);
+        }
+        assertThat(interval).isEqualTo(config.getMaxInterval());
+    }
+
+    @Test
+    @DisplayName("damping never pushes the interval outside its configured bounds")
+    void dampingRespectsTheClamps() {
+        assertThat(AdaptiveInterval.next(1.0, 0, config, Duration.ofHours(11)))
+                .isLessThanOrEqualTo(config.getMaxInterval());
+        assertThat(AdaptiveInterval.next(100_000.0, 0, config, Duration.ofMinutes(6)))
+                .isGreaterThanOrEqualTo(config.getMinInterval());
+    }
+
+    @Test
     @DisplayName("the observed rate moves toward new evidence without jumping to it")
     void rateIsSmoothed() {
         double updated = AdaptiveInterval.updateRate(10.0, 20, Duration.ofDays(1), 0.3);

@@ -315,7 +315,13 @@ public class ReferralService {
     }
 
     private void requireOwningReferrer(ReferralRequest request, UUID referrerId) {
-        if (request.referrerId() == null || !request.referrerId().equals(referrerId)) {
+        if (request.referrerId() == null) {
+            // Distinct from "someone else has it". Saying a request was taken when nobody has
+            // taken it sends the reader looking for a race that never happened.
+            throw new ConflictException(
+                    "Nobody has accepted this referral yet; accept it before acting on it");
+        }
+        if (!request.referrerId().equals(referrerId)) {
             throw new ConflictException("This referral was accepted by someone else");
         }
     }

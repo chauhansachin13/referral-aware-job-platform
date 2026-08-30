@@ -110,6 +110,44 @@ class TitleNormalizerTest {
         assertThat(TitleNormalizer.normalize("   ").level()).isEqualTo(SeniorityLevel.UNSPECIFIED);
     }
 
+    @ParameterizedTest(name = "{0} -> {1}")
+    @DisplayName("a role noun is not a seniority word")
+    @CsvSource({
+            // Every one of these came back mis-levelled from a real Greenhouse board.
+            "'Product Manager',                     UNSPECIFIED",
+            "'Technical Program Manager',           UNSPECIFIED",
+            "'Customer Success Manager',            UNSPECIFIED",
+            "'Solutions Architect',                 UNSPECIFIED",
+            "'Account Executive',                   UNSPECIFIED",
+            // ...while an actual seniority word still levels them.
+            "'Senior Product Manager',              SENIOR",
+            "'Staff Technical Program Manager',     STAFF",
+            "'Principal Solutions Architect',       PRINCIPAL",
+            // ...and the management ladder still resolves when it is named outright.
+            "'Engineering Manager',                 MANAGER",
+            "'Engineering Manager, Payments',       MANAGER",
+            "'Director of Product',                 DIRECTOR",
+            "'VP of Engineering',                   VP"
+    })
+    void roleNounsAreNotSeniority(String title, SeniorityLevel expected) {
+        assertThat(TitleNormalizer.normalize(title).level()).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("a product manager is an individual contributor, not a people manager")
+    void productManagersAreNotOnTheManagementLadder() {
+        // levelGate returns 0 across the IC/management boundary, so getting this wrong stopped
+        // two postings for the same PM role from ever merging.
+        assertThat(TitleNormalizer.normalize("Product Manager").level()
+                .isIndividualContributor())
+                .as("UNSPECIFIED is neutral, which is the correct answer for a bare role noun")
+                .isFalse();
+        assertThat(TitleNormalizer.normalize("Senior Product Manager").level())
+                .isEqualTo(SeniorityLevel.SENIOR);
+        assertThat(TitleNormalizer.normalize("Engineering Manager").level()
+                .isIndividualContributor()).isFalse();
+    }
+
     @Test
     @DisplayName("management rungs are not individual contributor rungs")
     void separatesManagementLadder() {

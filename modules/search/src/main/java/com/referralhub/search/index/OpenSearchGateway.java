@@ -1,6 +1,7 @@
 package com.referralhub.search.index;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.referralhub.common.error.DependencyUnavailableException;
 import com.referralhub.common.json.Json;
 import com.referralhub.search.config.SearchProperties;
 import java.time.Duration;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -67,12 +69,16 @@ public class OpenSearchGateway {
     }
 
     public void indexDocument(String id, String documentJson) {
-        client.put()
-                .uri("/{index}/_doc/{id}", properties.getIndexName(), id)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(documentJson)
-                .retrieve()
-                .toBodilessEntity();
+        try {
+            client.put()
+                    .uri("/{index}/_doc/{id}", properties.getIndexName(), id)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(documentJson)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (ResourceAccessException e) {
+            throw new DependencyUnavailableException("Search (OpenSearch)", e);
+        }
     }
 
     /** One newline-delimited bulk request. Payload is already NDJSON, trailing newline included. */
@@ -100,13 +106,19 @@ public class OpenSearchGateway {
      * hybrid retrieval cost the same number of round trips as a single-retriever search.
      */
     public JsonNode multiSearch(String ndjson) {
-        String body = client.post()
-                .uri("/_msearch")
-                .contentType(MediaType.parseMediaType("application/x-ndjson"))
-                .body(ndjson)
-                .retrieve()
-                .body(String.class);
-        return Json.tree(body == null ? "{}" : body);
+        try {
+            String body = client.post()
+                    .uri("/_msearch")
+                    .contentType(MediaType.parseMediaType("application/x-ndjson"))
+                    .body(ndjson)
+                    .retrieve()
+                    .body(String.class);
+            return Json.tree(body == null ? "{}" : body);
+        } catch (ResourceAccessException e) {
+            // Connection refused, DNS failure, read timeout. None of these are a bug in this
+            // service, and reporting them as one sends the reader looking in the wrong place.
+            throw new DependencyUnavailableException("Search (OpenSearch)", e);
+        }
     }
 
     public void refresh() {

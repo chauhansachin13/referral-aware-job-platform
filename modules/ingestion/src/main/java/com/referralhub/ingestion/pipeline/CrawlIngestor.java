@@ -139,19 +139,41 @@ public class CrawlIngestor {
         return CrawlOutcome.failed(board.id(), elapsed, error);
     }
 
+    /**
+     * The cadence for the next crawl.
+     *
+     * <p>The first crawl keeps whatever interval the board was registered with. Deriving one
+     * from the default rate prior would send a board straight to the twelve hour ceiling before
+     * a single posting rate has been observed — and since the rate can only be measured by
+     * crawling, a busy board would take days to discover it is busy. Both the rate and the
+     * interval wait for evidence; the registered interval is the prior until there is some.
+     */
     Duration nextInterval(CompanyBoard board, boolean changed) {
+        if (board.lastCrawledAt() == null) {
+            return board.crawlInterval();
+        }
         int unchanged = changed ? 0 : board.consecutiveUnchanged() + 1;
-        return AdaptiveInterval.next(board.observedPostingsPerDay(), unchanged, properties.getCrawl());
+        return AdaptiveInterval.next(board.observedPostingsPerDay(), unchanged,
+                properties.getCrawl(), board.crawlInterval());
     }
 
+    /**
+     * Folds this crawl's result into the board's smoothed posting rate.
+     *
+     * <p>The first crawl is deliberately excluded. It reports the board's entire back catalogue
+     * as changed, and there is no elapsed window to divide by, so treating it as a rate says a
+     * company that has 575 open roles is posting thousands a day. Observed against a real board:
+     * the first crawl drove the estimate to 4,140 postings per day and pinned the interval to
+     * its floor until several empty crawls decayed it back down. A backlog is not a rate.
+     */
     private double updatedRate(CompanyBoard board, int changedPostings) {
-        Instant since = board.lastCrawledAt() != null
-                ? board.lastCrawledAt()
-                : Instant.now().minus(board.crawlInterval());
+        if (board.lastCrawledAt() == null) {
+            return board.observedPostingsPerDay();
+        }
         return AdaptiveInterval.updateRate(
                 board.observedPostingsPerDay(),
                 changedPostings,
-                Duration.between(since, Instant.now()),
+                Duration.between(board.lastCrawledAt(), Instant.now()),
                 properties.getCrawl().getRateSmoothing());
     }
 }

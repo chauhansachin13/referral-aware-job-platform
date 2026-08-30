@@ -43,6 +43,16 @@ public class ApiExceptionHandler {
                 .body(ApiError.of(e.code(), e.getMessage()));
     }
 
+    @ExceptionHandler(DependencyUnavailableException.class)
+    public ResponseEntity<ApiError> handleDependencyUnavailable(DependencyUnavailableException e) {
+        log.error("Dependency unavailable: {}", e.dependency(), e);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.RETRY_AFTER, "5");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .headers(headers)
+                .body(ApiError.of(e.code(), e.getMessage()));
+    }
+
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ApiError> handleDomain(DomainException e) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
