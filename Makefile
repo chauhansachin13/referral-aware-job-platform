@@ -17,6 +17,18 @@ help: ## Show this help
 up: ## Start every dependency and the app
 	$(COMPOSE) up -d --build
 
+.PHONY: run-local
+run-local: ## Run without Docker, against native Postgres and Redis (brew install postgresql@16 redis)
+	@./scripts/run-local.sh
+
+.PHONY: stop-local
+stop-local: ## Stop the no-Docker stack
+	@./scripts/run-local.sh stop
+
+.PHONY: reset-local
+reset-local: ## Drop the local database and start clean
+	@./scripts/run-local.sh reset
+
 .PHONY: deps
 deps: ## Start only the dependencies (for ./gradlew bootRun)
 	$(COMPOSE) up -d postgres redis kafka opensearch minio

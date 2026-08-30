@@ -616,6 +616,24 @@ make down / clean
 Requires Docker and a JDK. Gradle provisions JDK 21 through the toolchain resolver, so the JDK on
 your PATH does not have to be 21 — this was developed on JDK 25.
 
+### Without Docker
+
+```bash
+brew install postgresql@16 redis
+make run-local      # starts Postgres, Redis and the app; prints the admin credentials
+make stop-local
+make reset-local    # drop the database and start clean
+```
+
+This runs the real application against natively installed datastores. OpenSearch, MinIO and Kafka
+are not started, so the components that talk to them are switched off rather than faked — search
+returns 503, resume upload is unavailable, and events accumulate in the outbox instead of being
+relayed. Registration and login, employee verification, the referral lifecycle, deduplication and
+crawling real public ATS boards all work.
+
+Secrets are generated once into a gitignored `.env.local` and reused, because regenerating them
+on each start would invalidate every issued token and make every stored resume undecryptable.
+
 | service | url |
 |---|---|
 | Console | http://localhost:8080 |

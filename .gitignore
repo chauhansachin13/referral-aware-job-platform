@@ -26,6 +26,7 @@ bin/
 *.key
 
 # Runtime artifacts
+.local-run/
 logs/
 *.log
 data/
